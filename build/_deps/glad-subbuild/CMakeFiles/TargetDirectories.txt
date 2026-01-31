@@ -1,0 +1,3 @@
+/workspaces/Hello-World/build/_deps/glad-subbuild/CMakeFiles/glad-populate.dir
+/workspaces/Hello-World/build/_deps/glad-subbuild/CMakeFiles/edit_cache.dir
+/workspaces/Hello-World/build/_deps/glad-subbuild/CMakeFiles/rebuild_cache.dir
