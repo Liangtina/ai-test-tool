@@ -4,7 +4,7 @@ STEP 1 - Forked your repository to my own account.
 
 STEP 2 - Created a new branch to keep things organized.
 
-STEP 3 - Modified the README file (right here =)).
+STEP 3 - Modified the INFO.md file (right here =)).
 
 STEP 4 - Made a commit with my changes.
 
