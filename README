@@ -1,1 +1,6 @@
 Hello World!
+updated by john 
+species = input("Are you an alien? ").lower()
+
+if species != "yes":
+    print("hello word day")
