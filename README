@@ -1,1 +1,43 @@
-Hello World!
+# GitHub Collaboration Experiment
+
+## Aim
+
+To demonstrate collaboration using GitHub by:
+
+* Forking a repository
+* Cloning it locally
+* Creating a new branch
+* Making changes
+* Raising a pull request
+* Resolving merge conflicts
+
+## Description
+
+GitHub is a platform that uses Git to help multiple users collaborate on projects.
+In this process:
+
+* A repository is forked and cloned
+* Changes are made in a new branch
+* Updates are submitted through a pull request
+* Merge conflicts are resolved before merging
+
+This ensures smooth and organized teamwork.
+
+## Algorithm
+
+1. Open GitHub and select a repository
+2. Fork the repository to your account
+3. Clone the repository to your local system
+4. Create a new branch
+5. Make necessary changes in the files
+6. Commit the changes
+7. Push the changes to GitHub
+8. Create a Pull Request
+9. Review and resolve merge conflicts (if any)
+10. Merge the changes into the main branch
+
+## Result
+
+Successfully demonstrated collaboration using GitHub.
+
+
