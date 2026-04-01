@@ -1,4 +1,5 @@
 
+import math
     def power(self, a, b):
         """Возведение числа a в степень b"""
         return a ** bdef main():
@@ -13,3 +14,10 @@
 if __name__ == "__main__":
     main()
 
+import math
+
+    def sqrt(self, a):
+        """Квадратный корень числа"""
+        if a < 0:
+            raise ValueError("Cannot calculate square root of negative number")
+        return math.sqrt(a)
