@@ -1,0 +1,2 @@
+checkpoint: e2e final verify after stale-pid fix
+status: complete
