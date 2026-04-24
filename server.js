@@ -27,6 +27,8 @@ function getHTML(serverTime) {
     #starfield {
       position: fixed;
       inset: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
       z-index: 0;
     }
@@ -205,8 +207,8 @@ function getHTML(serverTime) {
       }
 
       function resize() {
-        W = canvas.width  = canvas.offsetWidth;
-        H = canvas.height = canvas.offsetHeight;
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
         cx = W / 2;
         cy = H / 2;
       }
