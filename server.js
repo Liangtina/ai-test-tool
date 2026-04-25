@@ -187,7 +187,7 @@ function getHTML(serverTime) {
       const canvas = document.getElementById('starfield');
       const ctx = canvas.getContext('2d');
       const STAR_COUNT = 200;
-      const SPEED = 0.015;       // fractional distance per frame
+      const SPEED = 0.0075;      // fractional distance per frame
       const TRAIL_ALPHA = 0.18;  // motion-blur fade per frame
       const MIN_DIST = 0.02;     // min starting distance from center (0–1)
 
