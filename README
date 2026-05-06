@@ -1,1 +1,55 @@
-Hello World!
+# Hello World - Payment Test Suite
+
+This repository contains a dummy payment service with comprehensive test cases designed to run through Jenkins CI/CD pipeline.
+
+## Quick Start
+
+### Run Tests Locally
+```bash
+pip install -r requirements.txt
+pytest tests/ -v
+```
+
+### View Coverage
+```bash
+pytest tests/ --cov=src --cov-report=html
+```
+
+## What's Included
+
+- **Payment Service**: Dummy payment processing module
+- **21 Test Cases**: Comprehensive test coverage including positive, negative, and edge cases
+- **Jenkins Pipeline**: Automated CI/CD configuration
+- **Coverage Reports**: HTML and XML coverage reporting
+
+## Documentation
+
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for complete setup instructions and Jenkins configuration.
+
+## Test Results
+
+The test suite includes:
+- ✅ 4 Positive test cases
+- ❌ 8 Negative test cases
+- 🔍 9 Edge case tests
+
+Total: **21 automated tests**
+
+## Jenkins Integration
+
+This project includes a complete Jenkinsfile that:
+1. Checks out code
+2. Sets up Python environment
+3. Installs dependencies
+4. Runs all tests
+5. Generates coverage reports
+6. Publishes results
+
+## Project Structure
+```
+Hello-World/
+├── src/               # Payment service source code
+├── tests/             # Test cases
+├── Jenkinsfile        # Jenkins pipeline
+└── requirements.txt   # Dependencies
+```
