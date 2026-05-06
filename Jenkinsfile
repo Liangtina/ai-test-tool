@@ -16,9 +16,9 @@ pipeline {
         stage('Setup Python Environment') {
             steps {
                 echo 'Setting up Python environment...'
-                bat '''
-                    python --version
-                    python -m pip install --upgrade pip
+                sh '''
+                    python3 --version || python --version
+                    python3 -m pip install --upgrade pip || python -m pip install --upgrade pip
                 '''
             }
         }
@@ -26,8 +26,8 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo 'Installing dependencies...'
-                bat '''
-                    pip install -r requirements.txt
+                sh '''
+                    pip3 install -r requirements.txt || pip install -r requirements.txt
                 '''
             }
         }
@@ -35,7 +35,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 echo 'Running payment tests...'
-                bat '''
+                sh '''
                     pytest tests/ -v --junitxml=test-results.xml --html=test-report.html --self-contained-html
                 '''
             }
@@ -44,7 +44,7 @@ pipeline {
         stage('Code Coverage') {
             steps {
                 echo 'Generating code coverage report...'
-                bat '''
+                sh '''
                     pytest tests/ --cov=src --cov-report=html --cov-report=xml
                 '''
             }
