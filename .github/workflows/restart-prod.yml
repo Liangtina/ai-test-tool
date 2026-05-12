@@ -1,0 +1,11 @@
+name: Restart Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart production server
+        run: echo 'Restarting production server'
