@@ -1,1 +1,5 @@
 Hello World!
+
+This project demonstrates Git branching and conflict resolution using feature branches.
+
+This README was updated directly in the master branch.
