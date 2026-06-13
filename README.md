@@ -1,2 +1,1 @@
-hello from branchA
-
+hello from branchA and branchB
