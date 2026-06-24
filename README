@@ -1,1 +1,11 @@
 Hello World!
+
+## Security
+
+This project follows security best practices to prevent XSS (Cross-Site Scripting) and other security vulnerabilities.
+
+For security vulnerabilities, please see [SECURITY.md](SECURITY.md).
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
