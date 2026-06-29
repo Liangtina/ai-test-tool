@@ -43,8 +43,7 @@ def detect_script_type(script_text):
         if kw in script_text:
             return "议题型"
     return "事件型"
-
-def get_event_speech(grade, speech_type, extracted_data):
+    def get_event_speech(grade, speech_type, extracted_data):
     names = extracted_data.get("names", ["小明", "小丽", "小刚"])
     items = extracted_data.get("items", ["作品", "东西"])
     if not names or not isinstance(names, list):
@@ -113,8 +112,7 @@ def get_event_speech(grade, speech_type, extracted_data):
     grade_templates = templates.get(grade, templates["3年级"])
     result = grade_templates.get(speech_type, "发言内容待生成")
     return result if result else "发言内容待生成"
-
-def get_topic_speech(grade, speech_type, extracted_data):
+    def get_topic_speech(grade, speech_type, extracted_data):
     topic = extracted_data.get("topic", "这个议题")
     names = extracted_data.get("names", ["小明", "小丽", "小刚"])
     if not names or not isinstance(names, list):
@@ -194,8 +192,7 @@ def parse_docx(file_bytes):
         return text
     except Exception as e:
         return None
-
-def extract_info_from_script(script_text, api_key, base_url, model, script_type):
+        def extract_info_from_script(script_text, api_key, base_url, model, script_type):
     if not script_text or len(script_text.strip()) < 10:
         return None
     if script_type == "议题型":
@@ -279,8 +276,7 @@ def highlight_diff(original, optimized):
         else:
             highlighted.append("   " + line)
     return '\n'.join(highlighted), changes
-
-def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, base_url, model):
+    def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, base_url, model):
     issues = []
     strengths = []
     warnings = []
@@ -333,8 +329,7 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
         except Exception as e:
             optimized_prompt = "优化失败: " + str(e)
     return {"issues": issues, "strengths": strengths, "warnings": warnings, "total_issues": len(issues), "total_strengths": len(strengths), "total_warnings": len(warnings), "optimized_prompt": optimized_prompt}
-
-st.title("🔬 AI指令词诊断与自动优化工具 v5.0")
+    st.title("🔬 AI指令词诊断与自动优化工具 v5.0")
 st.markdown("选择年级 → 上传故事脚本 → 自动识别脚本类型 → 生成模拟发言 → 测试AI指令词")
 
 with st.sidebar:
@@ -348,15 +343,7 @@ with st.sidebar:
     st.caption("📁 历史记录: " + str(len(os.listdir(HISTORY_DIR))) + " 条")
 
 if menu == "📖 说明":
-    st.markdown("""
-    ## 📖 使用说明（v5.0）
-    ### 🆕 新功能：双模式支持
-    工具会自动识别脚本类型：
-    | 脚本类型 | 适用场景 | 示例 |
-    |---------|---------|------|
-    | **事件型** | 有情节、有冲突的故事 | 《不能没有礼物的日子》 |
-    | **议题型** | 需要表达观点和理由的讨论 | 《你赞成拆除城市的旧建筑吗？》 |
-    """)
+    st.markdown("""## 📖 使用说明（v5.0）\n### 双模式支持\n工具会自动识别脚本类型：\n- **事件型**：有情节、有冲突的故事（如《不能没有礼物的日子》）\n- **议题型**：需要表达观点和理由的讨论（如《你赞成拆除城市的旧建筑吗？》）""")
 elif menu == "📚 历史记录":
     st.subheader("📚 历史测试记录")
     records = []
@@ -467,13 +454,4 @@ else:
         if not course_name:
             st.error("请填写课程名称")
             st.stop()
-        if not ai_configs_input:
-            st.error("请粘贴AI指令词")
-            st.stop()
-        if not test_types:
-            st.error("请至少选择一种发言类型")
-            st.stop()
-        if "extracted_data" not in st.session_state or not st.session_state.get("extracted_confirmed", False):
-            st.error("请先上传脚本并确认提取信息")
-            st.stop()
-        extracted_data = st.session_state["extracted_data
+        if not ai_config
