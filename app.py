@@ -109,7 +109,6 @@ STUDENT_SPEECH_TEMPLATES = {
 # ============================================================
 
 def parse_custom_names(text):
-    """解析用户输入的名字列表"""
     if not text or not text.strip():
         return None
     items = re.split(r'[,，、\s\n]+', text.strip())
@@ -117,7 +116,6 @@ def parse_custom_names(text):
     return items if items else None
 
 def parse_custom_items(text):
-    """解析用户输入的物品列表（每行：物品,动作,新用途）"""
     if not text or not text.strip():
         return None
     items = []
@@ -131,7 +129,6 @@ def parse_custom_items(text):
     return items if items else None
 
 def parse_custom_traits(text):
-    """解析用户输入的特质列表（每行：特点,工作,理由）"""
     if not text or not text.strip():
         return None
     traits = []
@@ -145,15 +142,6 @@ def parse_custom_traits(text):
     return traits if traits else None
 
 def parse_custom_fuzzy(text):
-    """解析用户输入的模糊特质"""
-    if not text or not text.strip():
-        return None
-    items = re.split(r'[,，、\s\n]+', text.strip())
-    items = [item.strip() for item in items if item.strip()]
-    return items if items else None
-
-def parse_custom_jobs(text):
-    """解析用户输入的工作列表"""
     if not text or not text.strip():
         return None
     items = re.split(r'[,，、\s\n]+', text.strip())
@@ -173,8 +161,6 @@ def generate_student_speech_with_custom(
     fuzzy_traits=None,
     jobs=None
 ):
-    """使用自定义词汇生成模拟发言"""
-    
     name_pool = names if names else DEFAULT_NAMES
     item_pool = items if items else DEFAULT_ITEMS
     trait_pool = traits if traits else DEFAULT_TRAITS
@@ -243,7 +229,6 @@ def generate_student_speech_with_custom(
 
 
 def generate_all_test_speeches(test_types, samples_per_type, custom_data):
-    """生成所有测试发言"""
     speeches = []
     for _ in range(samples_per_type):
         for speech_type in test_types:
@@ -337,7 +322,6 @@ def highlight_diff(original, optimized):
     ))
     
     changes = []
-    import re
     for line in diff:
         if line.startswith('@@'):
             match = re.search(r'@@ -(\d+),?\d* \+(\d+),?\d* @@', line)
@@ -354,9 +338,9 @@ def highlight_diff(original, optimized):
                 is_changed = True
                 break
         if is_changed:
-            highlighted.append(f"🟢 {line}")
+            highlighted.append("🟢 " + line)
         else:
-            highlighted.append(f"   {line}")
+            highlighted.append("   " + line)
     
     return '\n'.join(highlighted), changes
 
@@ -377,40 +361,40 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
         
         if "点评" in ai_name or "评价" in ai_name:
             if not any(k in feedback for k in ["评级", "推荐", "维度", "综合"]):
-                issues.append(f"未按格式输出（缺评级/维度/综合结构）— 发言类型: {desc}")
+                issues.append("未按格式输出（缺评级/维度/综合结构）— 发言类型: " + desc)
             elif "评级" not in feedback and "推荐" not in feedback[:200]:
-                warnings.append(f"格式不完整，可能缺少评级 — {desc}")
+                warnings.append("格式不完整，可能缺少评级 — " + desc)
         
         incomplete_types = ["缺为什么", "只说了物品没说特点", "只说了特点没说工作", "只说了特点缺工作缺理由", "过于简短", "特点模糊不具体"]
         if speech_type in incomplete_types:
             has_question = any(k in feedback for k in ["为什么", "补充", "具体", "理由", "说说", "哪些", "怎样"])
             if not has_question:
-                issues.append(f"对不完整发言未追问缺失信息 — {desc}")
+                issues.append("对不完整发言未追问缺失信息 — " + desc)
             else:
-                strengths.append(f"能主动追问缺失信息 — {desc}")
+                strengths.append("能主动追问缺失信息 — " + desc)
         
         if speech_type == "只说了物品没说特点" and "特点" not in feedback and "工作" not in feedback:
-            issues.append(f"点评与发言内容不匹配，可能跑题 — {desc}")
+            issues.append("点评与发言内容不匹配，可能跑题 — " + desc)
         
         if speech_type in ["完整优秀", "完整优秀_单特点多工作"]:
             if any(k in feedback for k in ["棒", "好", "优秀", "完整", "清楚"]):
-                strengths.append(f"对完整发言肯定到位 — {desc}")
+                strengths.append("对完整发言肯定到位 — " + desc)
             else:
-                warnings.append(f"对完整发言未给予足够肯定 — {desc}")
+                warnings.append("对完整发言未给予足够肯定 — " + desc)
         
         if "回应" in ai_name:
             if not any(k in feedback for k in ["你说得", "我同意", "是的", "对呀", "没错"]):
-                warnings.append(f"回应类AI缺乏互动感 — {desc}")
+                warnings.append("回应类AI缺乏互动感 — " + desc)
         
         if "总结" in ai_name:
             if not any(k in feedback for k in ["总结", "归纳", "整理", "综合"]):
-                issues.append(f"总结类AI未做归纳总结 — {desc}")
+                issues.append("总结类AI未做归纳总结 — " + desc)
         
         word_count = len(feedback)
         if word_count < 20:
-            warnings.append(f"点评过短（{word_count}字），不够充分 — {desc}")
+            warnings.append("点评过短（" + str(word_count) + "字），不够充分 — " + desc)
         elif word_count > 1000:
-            warnings.append(f"点评过长（{word_count}字），需要精简 — {desc}")
+            warnings.append("点评过长（" + str(word_count) + "字），需要精简 — " + desc)
     
     issues = list(dict.fromkeys(issues))
     strengths = list(dict.fromkeys(strengths))
@@ -419,20 +403,23 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
     optimized_prompt = None
     
     if issues or warnings:
-        optimization_request = f"""
+        issue_text = "\n".join(["- " + i for i in issues]) if issues else "无严重问题"
+        warning_text = "\n".join(["- " + w for w in warnings]) if warnings else "无"
+        
+        optimization_request = """
 【任务】优化以下AI指令词，解决诊断中发现的问题。
 
 【原始指令词】
-{ai_prompt}
+""" + ai_prompt + """
 
 【AI角色】
-{ai_role}
+""" + ai_role + """
 
 【诊断出的问题】
-{chr(10).join(['- ' + i for i in issues]) if issues else '无严重问题'}
+""" + issue_text + """
 
 【需要注意的点】
-{chr(10).join(['- ' + w for w in warnings]) if warnings else '无'}
+""" + warning_text + """
 
 【优化要求】
 1. 针对以上每个问题，在指令词中增加或修改对应的要求
@@ -457,7 +444,7 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
             )
             optimized_prompt = response.choices[0].message.content
         except Exception as e:
-            optimized_prompt = f"【优化失败】{str(e)}"
+            optimized_prompt = "【优化失败】" + str(e)
     
     return {
         "issues": issues,
@@ -488,7 +475,7 @@ with st.sidebar:
     base_url = st.text_input("Base URL", value="https://api.deepseek.com", key="base_url_input")
     model = st.text_input("模型", value="deepseek-chat", key="model_input")
     
-    st.caption(f"📁 历史记录: {len(os.listdir(HISTORY_DIR))} 条")
+    st.caption("📁 历史记录: " + str(len(os.listdir(HISTORY_DIR))) + " 条")
 
 if menu == "📖 说明":
     st.markdown("""
@@ -524,7 +511,7 @@ elif menu == "📚 历史记录":
         st.info("暂无历史记录")
     else:
         for r in sorted(records, key=lambda x: x["time"], reverse=True)[:20]:
-            st.caption(f"📅 {r['course']} - {r['time']} ({r['ai_count']}个AI)")
+            st.caption("📅 " + r['course'] + " - " + r['time'] + " (" + str(r['ai_count']) + "个AI)")
 
 else:
     # ---- 课程信息 ----
@@ -639,13 +626,13 @@ else:
             st.error("AI指令词解析失败")
             st.stop()
         
-        st.success(f"✅ 已解析 {len(ai_configs)} 个AI")
+        st.success("✅ 已解析 " + str(len(ai_configs)) + " 个AI")
         for c in ai_configs:
-            st.caption(f"  - {c['name']} ({c['role']})")
+            st.caption("  - " + c['name'] + " (" + c['role'] + ")")
         
         # ---- 生成发言 ----
         speeches = generate_all_test_speeches(test_types, samples_per_type, custom_data)
-        st.success(f"✅ 已生成 {len(speeches)} 条模拟发言")
+        st.success("✅ 已生成 " + str(len(speeches)) + " 条模拟发言")
         
         # ---- 执行测试 ----
         progress_bar = st.progress(0)
@@ -658,7 +645,7 @@ else:
         for ai_config in ai_configs:
             for speech in speeches:
                 idx += 1
-                status_text.text(f"⏳ 测试中: {ai_config['name']} × {speech['type']} ({idx}/{total})")
+                status_text.text("⏳ 测试中: " + ai_config['name'] + " × " + speech['type'] + " (" + str(idx) + "/" + str(total) + ")")
                 progress_bar.progress(idx / total)
                 
                 feedback = call_ai(api_key, base_url, model, ai_config["prompt"], speech["speech"])
@@ -679,7 +666,7 @@ else:
         df = pd.DataFrame(results)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        st.success(f"🎉 测试完成！共 {len(results)} 条点评记录")
+        st.success("🎉 测试完成！共 " + str(len(results)) + " 条点评记录")
         
         # ---- 诊断与优化 ----
         st.subheader("📋 诊断与优化结果")
@@ -691,7 +678,7 @@ else:
             ai_role = ai_df["AI角色"].iloc[0]
             ai_prompt = ai_df["原始指令词"].iloc[0]
             
-            with st.spinner(f"🔍 正在分析 {ai_name} 并生成优化方案..."):
+            with st.spinner("🔍 正在分析 " + ai_name + " 并生成优化方案..."):
                 diagnosis = diagnose_ai_performance(ai_name, ai_role, ai_prompt, ai_df, api_key, base_url, model)
                 all_diagnoses.append({
                     "name": ai_name,
@@ -704,7 +691,7 @@ else:
         # ---- 显示结果 ----
         for diag in all_diagnoses:
             status_icon = "✅" if not diag["issues"] else "⚠️"
-            with st.expander(f"{status_icon} {diag['name']} ({diag['role']}) — 问题: {diag['total_issues']}个", expanded=True):
+            with st.expander(status_icon + " " + diag['name'] + " (" + diag['role'] + ") — 问题: " + str(diag['total_issues']) + "个", expanded=True):
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -717,17 +704,17 @@ else:
                 if diag["strengths"]:
                     st.markdown("**✅ 优点：**")
                     for s in diag["strengths"]:
-                        st.markdown(f"- {s}")
+                        st.markdown("- " + s)
                 
                 if diag["issues"]:
                     st.markdown("**❌ 需要修改的问题：**")
                     for issue in diag["issues"]:
-                        st.markdown(f"- {issue}")
+                        st.markdown("- " + issue)
                 
                 if diag["warnings"]:
                     st.markdown("**🟡 值得注意：**")
                     for w in diag["warnings"]:
-                        st.markdown(f"- {w}")
+                        st.markdown("- " + w)
                 
                 if diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"]:
                     st.markdown("---")
@@ -745,11 +732,11 @@ else:
                         st.code(highlighted, language="text")
                     
                     st.download_button(
-                        label=f"📋 下载 {diag['name']} 优化版",
+                        label="📋 下载 " + diag['name'] + " 优化版",
                         data=diag["optimized_prompt"],
-                        file_name=f"{diag['name']}_优化版.txt",
+                        file_name=diag['name'] + "_优化版.txt",
                         mime="text/plain",
-                        key=f"download_{diag['name']}_{timestamp}"
+                        key="download_" + diag['name'] + "_" + timestamp
                     )
                     st.caption("💡 直接复制右侧优化版本，替换你原来的指令词即可")
                 else:
@@ -760,7 +747,7 @@ else:
                 st.markdown("**📝 详细测试记录**")
                 ai_df = df[df["AI名称"] == diag["name"]]
                 for _, row in ai_df.iterrows():
-                    with st.expander(f"📌 {row['发言说明']}"):
+                    with st.expander("📌 " + row['发言说明']):
                         st.markdown("**模拟发言：**")
                         st.info(row["模拟发言"])
                         st.markdown("**AI回复：**")
@@ -771,13 +758,14 @@ else:
         
         summary_data = []
         for diag in all_diagnoses:
+            has_optimized = diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"]
             summary_data.append({
                 "AI名称": diag["name"],
                 "角色": diag["role"],
                 "问题数": diag["total_issues"],
                 "优点数": diag["total_strengths"],
                 "状态": "⚠️ 已优化" if diag["total_issues"] > 0 else "✅ 良好",
-                "有优化版": "是" if diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"] else "否"
+                "有优化版": "是" if has_optimized else "否"
             })
         
         st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
@@ -785,14 +773,14 @@ else:
         optimized_texts = []
         for diag in all_diagnoses:
             if diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"]:
-                optimized_texts.append(f"【{diag['name']}】\n{diag['optimized_prompt']}\n")
+                optimized_texts.append("【" + diag['name'] + "】\n" + diag['optimized_prompt'] + "\n")
         
         if optimized_texts:
             all_optimized = "\n=== 分隔 ===\n".join(optimized_texts)
             st.download_button(
                 label="📥 一键下载所有优化版指令词",
                 data=all_optimized,
-                file_name=f"所有优化版指令词_{course_name}_{timestamp}.txt",
+                file_name="所有优化版指令词_" + course_name + "_" + timestamp + ".txt",
                 mime="text/plain"
             )
         
@@ -804,7 +792,7 @@ else:
             "ai_names": [c["name"] for c in ai_configs],
             "diagnoses": all_diagnoses
         }
-        with open(os.path.join(HISTORY_DIR, f"{course_name}_{timestamp}.json"), "w", encoding="utf-8") as f:
+        with open(os.path.join(HISTORY_DIR, course_name + "_" + timestamp + ".json"), "w", encoding="utf-8") as f:
             json.dump(save_data, f, ensure_ascii=False, indent=2)
         
-        st.caption(f"💾 已保存至历史
+        st.caption("💾 已保存至历史记录")
