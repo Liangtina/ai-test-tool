@@ -812,4 +812,4 @@ else:
             "diagnoses": all_diagnoses
         }
         with open(os.path.join(HISTORY_DIR, f"{course_name}_{timestamp}.json"), "w", encoding="utf-8") as f:
-            json.dump(save_data, f
+       json.dump(save_data, f, ensure_ascii=False, indent=2)
