@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 import pandas as pd
 from openai import OpenAI
+import difflib
 
 # ============================================================
 # 页面配置
@@ -185,13 +186,57 @@ def call_ai(api_key, base_url, model, system_prompt, user_speech):
 
 
 # ============================================================
+# 对比指令词差异（标注修改位置）
+# ============================================================
+
+def highlight_diff(original, optimized):
+    """对比两个指令词，标注新增/修改的部分"""
+    if not optimized or not original:
+        return optimized, []
+    
+    orig_lines = original.split('\n')
+    opt_lines = optimized.split('\n')
+    
+    diff = list(difflib.unified_diff(
+        orig_lines, opt_lines,
+        fromfile='原始', tofile='优化后',
+        lineterm=''
+    ))
+    
+    # 提取变更的位置
+    changes = []
+    import re
+    for line in diff:
+        if line.startswith('@@'):
+            match = re.search(r'@@ -(\d+),?\d* \+(\d+),?\d* @@', line)
+            if match:
+                old_start = int(match.group(1))
+                new_start = int(match.group(2))
+                changes.append({'old_start': old_start, 'new_start': new_start})
+    
+    # 生成带标注的版本
+    highlighted = []
+    for i, line in enumerate(opt_lines):
+        is_changed = False
+        for change in changes:
+            if change['new_start'] <= i + 1 <= change['new_start'] + 3:
+                is_changed = True
+                break
+        if is_changed:
+            highlighted.append(f"🟢 {line}")
+        else:
+            highlighted.append(f"   {line}")
+    
+    return '\n'.join(highlighted), changes
+
+
+# ============================================================
 # 核心：诊断 + 自动优化
 # ============================================================
 
 def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, base_url, model):
     """诊断AI表现并生成优化后的指令词"""
     
-    # ---- 第一步：提取问题 ----
     issues = []
     strengths = []
     warnings = []
@@ -242,7 +287,6 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
     strengths = list(dict.fromkeys(strengths))
     warnings = list(dict.fromkeys(warnings))
     
-    # ---- 第二步：生成优化后的指令词 ----
     optimized_prompt = None
     
     if issues or warnings:
@@ -304,7 +348,6 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
 st.title("🔬 AI指令词诊断与自动优化工具")
 st.markdown("测试所有AI → 自动诊断问题 → AI自动生成优化后的指令词")
 
-# ---- 侧边栏 ----
 with st.sidebar:
     st.header("📋 功能")
     menu = st.radio("选择操作", ["🆕 新建测试", "📚 历史记录", "📖 说明"])
@@ -318,33 +361,16 @@ with st.sidebar:
     
     st.caption(f"📁 历史记录: {len(os.listdir(HISTORY_DIR))} 条")
 
-# ---- 主内容 ----
 if menu == "📖 说明":
     st.markdown("""
     ## 📖 使用说明
-    
-    ### 这个工具是做什么的？
     
     每节课你需要"捏制"多个AI，每个AI承担不同角色（点评、总结、回应等）。
     
     这个工具会：
     1. **测试**：用模拟学生发言测试每个AI
     2. **诊断**：自动找出每个AI指令词中的问题
-    3. **优化**：AI自动生成优化后的新指令词
-    
-    ### 三步搞定
-    
-    | 步骤 | 操作 |
-    |------|------|
-    | 1️⃣ | 粘贴本节课所有AI的指令词 |
-    | 2️⃣ | 点击"开始诊断" |
-    | 3️⃣ | 查看优化后的指令词，复制替换原文件 |
-    
-    ### 团队使用
-    
-    - 本工具部署在公网，所有同事通过同一链接访问
-    - 各自使用自己的API Key
-    - 所有数据只保存在本地浏览器和你的API之间
+    3. **优化**：AI自动生成优化后的新指令词，并标注修改位置
     """)
 
 elif menu == "📚 历史记录":
@@ -363,8 +389,6 @@ elif menu == "📚 历史记录":
             st.caption(f"📅 {r['course']} - {r['time']} ({r['ai_count']}个AI)")
 
 else:
-    # ---- 新建测试 ----
-    
     col1, col2 = st.columns([1, 2])
     with col1:
         course_name = st.text_input("📚 课程名称", placeholder="如：第1课_礼物改造")
@@ -475,10 +499,12 @@ else:
                 all_diagnoses.append({
                     "name": ai_name,
                     "role": ai_role,
+                    "original_prompt": ai_prompt,
                     **diagnosis
                 })
                 time.sleep(0.3)
         
+        # ---- 显示诊断结果（带差异标注和下拉菜单） ----
         for diag in all_diagnoses:
             status_icon = "✅" if not diag["issues"] else "⚠️"
             with st.expander(f"{status_icon} {diag['name']} ({diag['role']}) — 问题: {diag['total_issues']}个", expanded=True):
@@ -506,10 +532,21 @@ else:
                     for w in diag["warnings"]:
                         st.markdown(f"- {w}")
                 
-                if diag["optimized_prompt"]:
+                # ---- 优化后的指令词（带差异标注） ----
+                if diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"]:
                     st.markdown("---")
-                    st.markdown("**✨ AI自动优化后的指令词（可直接复制使用）**")
-                    st.code(diag["optimized_prompt"], language="text")
+                    st.markdown("**✨ AI自动优化后的指令词**")
+                    st.caption("🟢 绿色行 = 新增或修改的内容")
+                    
+                    highlighted, changes = highlight_diff(diag["original_prompt"], diag["optimized_prompt"])
+                    
+                    col_left, col_right = st.columns(2)
+                    with col_left:
+                        st.markdown("**📄 原始版本**")
+                        st.code(diag["original_prompt"], language="text")
+                    with col_right:
+                        st.markdown("**📝 优化版本（🟢标注变更）**")
+                        st.code(highlighted, language="text")
                     
                     st.download_button(
                         label=f"📋 下载 {diag['name']} 优化版",
@@ -518,12 +555,12 @@ else:
                         mime="text/plain",
                         key=f"download_{diag['name']}_{timestamp}"
                     )
-                    
-                    st.caption("💡 直接复制上方代码块中的内容，替换你原来的指令词即可")
+                    st.caption("💡 直接复制右侧优化版本，替换你原来的指令词即可")
                 else:
                     st.markdown("---")
                     st.markdown("🎉 **该AI表现良好，无需优化！**")
                 
+                # ---- 详细测试记录（下拉菜单查看模拟发言） ----
                 st.markdown("---")
                 st.markdown("**📝 详细测试记录**")
                 ai_df = df[df["AI名称"] == diag["name"]]
@@ -534,6 +571,7 @@ else:
                         st.markdown("**AI回复：**")
                         st.text(row["AI点评"])
         
+        # ---- 总体概览 ----
         st.subheader("📊 总体概览")
         
         summary_data = []
@@ -544,14 +582,14 @@ else:
                 "问题数": diag["total_issues"],
                 "优点数": diag["total_strengths"],
                 "状态": "⚠️ 已优化" if diag["total_issues"] > 0 else "✅ 良好",
-                "有优化版": "是" if diag["optimized_prompt"] else "否"
+                "有优化版": "是" if diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"] else "否"
             })
         
         st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
         
         optimized_texts = []
         for diag in all_diagnoses:
-            if diag["optimized_prompt"]:
+            if diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"]:
                 optimized_texts.append(f"【{diag['name']}】\n{diag['optimized_prompt']}\n")
         
         if optimized_texts:
@@ -574,3 +612,5 @@ else:
             json.dump(save_data, f, ensure_ascii=False, indent=2)
         
         st.caption(f"💾 已保存至历史记录")
+        
+      
