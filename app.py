@@ -694,5 +694,4 @@ else:
         if "names" not in extracted_data or not isinstance(extracted_data["names"], list):
             extracted_data["names"] = ["小明", "小丽", "小刚"]
         
-        col1, col2 = st.columns(2)
-        with col
+        col1, col2 = st.columns(
