@@ -16,7 +16,7 @@ import io
 # ============================================================
 
 st.set_page_config(
-    page_title="AI指令词诊断与自动优化工具 v4.0",
+    page_title="AI指令词诊断与自动优化工具 v5.0",
     page_icon="🔬",
     layout="wide"
 )
@@ -92,16 +92,46 @@ SPEECH_TYPES_CONFIG = [
 ]
 
 # ============================================================
-# 各年级的发言生成模板
+# 判断脚本类型
 # ============================================================
 
-def get_speech_for_grade(grade, speech_type, extracted_data):
-    """根据年级和类型生成对应的模拟发言"""
+def detect_script_type(script_text):
+    """自动判断脚本类型：事件型 or 议题型"""
+    if not script_text:
+        return "事件型"
+    
+    # 检查是否包含议题型关键词
+    topic_keywords = ["赞成", "反对", "是否", "应该", "你认为", "怎么看", "观点", "看法", "立场", "议题", "讨论"]
+    for kw in topic_keywords:
+        if kw in script_text:
+            return "议题型"
+    
+    # 检查是否包含事件型关键词
+    event_keywords = ["不小心", "弄坏", "撞到", "哭了", "生气", "发生", "然后", "接着", "故事", "有一天"]
+    for kw in event_keywords:
+        if kw in script_text:
+            return "事件型"
+    
+    # 默认返回事件型
+    return "事件型"
+
+
+# ============================================================
+# 事件型脚本的发言生成模板
+# ============================================================
+
+def get_event_speech(grade, speech_type, extracted_data):
+    """事件型脚本的模拟发言生成"""
     names = extracted_data.get("names", ["小明", "小丽", "小刚"])
     items = extracted_data.get("items", ["作品", "东西"])
     
-    name = random.choice(names) if names else "小明"
-    item = random.choice(items) if items else "东西"
+    if not names or not isinstance(names, list):
+        names = ["小明", "小丽", "小刚"]
+    if not items or not isinstance(items, list):
+        items = ["作品", "东西"]
+    
+    name = random.choice(names)
+    item = random.choice(items)
     
     templates = {
         "1-2年级": {
@@ -162,11 +192,106 @@ def get_speech_for_grade(grade, speech_type, extracted_data):
     }
     
     grade_templates = templates.get(grade, templates["3年级"])
-    return grade_templates.get(speech_type, "发言内容待生成")
+    result = grade_templates.get(speech_type, "发言内容待生成")
+    
+    if result is None:
+        result = "发言内容待生成"
+    return result
 
 
 # ============================================================
-# 解析上传的脚本
+# 议题型脚本的发言生成模板
+# ============================================================
+
+def get_topic_speech(grade, speech_type, extracted_data):
+    """议题型脚本的模拟发言生成"""
+    topic = extracted_data.get("topic", "这个议题")
+    names = extracted_data.get("names", ["小明", "小丽", "小刚"])
+    
+    if not names or not isinstance(names, list):
+        names = ["小明", "小丽", "小刚"]
+    name = random.choice(names)
+    
+    templates = {
+        "1-2年级": {
+            "完整优秀": f"我觉得应该{topic}，因为这样做会让大家都更方便。我也想问一下别人的想法。",
+            "观点模糊": f"我觉得这个……我也不知道该怎么办，好像这样也行，那样也行。",
+            "论据空洞": f"我觉得应该{topic}，因为我妈妈也是这样说的。",
+            "逻辑混乱": f"我觉得……首先呢，应该{topic}。然后呢，这样比较好。对了，我还想到一个问题……算了，就这样吧。",
+            "语言粗糙": f"我觉得应该{topic}，就这样吧，挺好的。",
+            "缺乏共情": f"我觉得应该{topic}。规则就是这样的，不用想太多。",
+            "只说立场没理由": f"我觉得应该{topic}。",
+            "跑题抓错矛盾": f"我觉得这个问题不重要，我们应该关注别的事情。",
+            "单维度深挖": f"我觉得应该{topic}，因为每个人都有自己的想法，我们应该互相理解。"
+        },
+        "3年级": {
+            "完整优秀": f"我觉得应该{topic}，因为这样做对大家都有好处。我也想知道别人是怎么想的。",
+            "观点模糊": f"我觉得这个问题……嗯……好像两边都有道理，我也不太确定。",
+            "论据空洞": f"我觉得应该{topic}，因为老师说这样做是对的。",
+            "逻辑混乱": f"我觉得……首先，应该{topic}。然后，这样比较好。对了，我还想到……反正就是这样。",
+            "语言粗糙": f"我觉得应该{topic}，就这个意思，大家都懂的。",
+            "缺乏共情": f"我觉得应该{topic}。事情就是这样，按规矩办就行了。",
+            "只说立场没理由": f"我觉得应该{topic}。",
+            "跑题抓错矛盾": f"我觉得这个问题不重要，我们应该想点别的。",
+            "单维度深挖": f"我觉得应该{topic}，因为每个人都有自己的立场，我们需要互相理解。"
+        },
+        "4年级": {
+            "完整优秀": f"我认为应该{topic}，因为这样做更合理。首先，这符合大多数人的利益；其次，这样做也能照顾到少数人的感受。我想听听大家的看法。",
+            "观点模糊": f"我觉得这件事两方面都有道理，很难说哪个更好。可能要看具体情况吧。",
+            "论据空洞": f"我认为应该{topic}，因为这是正确的选择。大家都这么说，应该没错。",
+            "逻辑混乱": f"我觉得……首先，应该{topic}。然后呢，这样会更好。哦对了，我还想到一个问题……反正就是这样的。",
+            "语言粗糙": f"我觉得应该{topic}，就这样，不用搞那么复杂。",
+            "缺乏共情": f"我认为应该{topic}。这是一个理性的选择，不需要考虑太多情感因素。",
+            "只说立场没理由": f"我认为应该{topic}。",
+            "跑题抓错矛盾": f"我觉得这个问题本身就有问题，我们应该讨论更重要的议题。",
+            "单维度深挖": f"我认为应该{topic}，因为每个人都有自己的立场和理由，我们需要找到大家都能接受的方案。"
+        },
+        "5年级": {
+            "完整优秀": f"我认为应该{topic}，因为这样做能带来更大的社会价值。首先，它能促进整体的发展；其次，它也能考虑到个体的需求。当然，在实施过程中需要注意平衡各方利益。",
+            "观点模糊": f"我觉得这个问题很复杂，从不同角度看有不同的理解。可能没有一个绝对正确的答案。",
+            "论据空洞": f"我认为应该{topic}，因为这显然是正确的选择。理由很简单，就是这样做对大家都好。",
+            "逻辑混乱": f"关于这个问题，我有几个想法。第一，应该{topic}。第二，这样比较合理。第三，还需要考虑其他因素。反正就是这些吧。",
+            "语言粗糙": f"我觉得应该{topic}，这个大家都明白，不用多说。",
+            "缺乏共情": f"我认为应该{topic}。这是一个效率优先的选择，不需要过多考虑情感因素。",
+            "只说立场没理由": f"我认为应该{topic}。这是合理的决策。",
+            "跑题抓错矛盾": f"我觉得这个议题本身的价值不大，我们应该关注更有建设性的方向。",
+            "单维度深挖": f"我认为应该{topic}，因为每个人都有自己的立场和价值观。真正的问题在于我们如何找到平衡点。"
+        },
+        "6-7年级": {
+            "完整优秀": f"我认为应该{topic}，因为这是符合社会发展方向的理性选择。首先，它能提升整体效率；其次，它也能保障个体的基本权益。当然，在实施过程中需要建立完善的配套机制。我想强调的是，任何决策都需要在利弊之间找到平衡。",
+            "观点模糊": f"我认为这个问题需要从多个维度来分析。从不同的立场出发，可能会得出不同的结论。这本身就是一个值得深入探讨的议题。",
+            "论据空洞": f"我认为应该{topic}，因为这是显而易见的正确选择。理由就是这样做符合常识和逻辑。",
+            "逻辑混乱": f"我想从几个层面来思考这个问题。首先，应该{topic}。其次，这符合发展趋势。再者，还需要考虑……嗯，总之就是这样。",
+            "语言粗糙": f"我觉得应该{topic}，这个没什么好讨论的，就是这样。",
+            "缺乏共情": f"我认为应该{topic}。这是一个基于效率和理性的决策，情感因素不应成为主要考量。",
+            "只说立场没理由": f"我认为应该{topic}。这是经过理性判断后的选择。",
+            "跑题抓错矛盾": f"我认为这个议题背后的核心问题其实是价值取向的差异，而不是表面的选择。我们需要重新审视问题的本质。",
+            "单维度深挖": f"我认为应该{topic}，因为这个选择背后涉及的是不同价值观的碰撞。我们需要的不是简单的非此即彼，而是更深层次的对话与理解。"
+        }
+    }
+    
+    grade_templates = templates.get(grade, templates["3年级"])
+    result = grade_templates.get(speech_type, "发言内容待生成")
+    
+    if result is None:
+        result = "发言内容待生成"
+    return result
+
+
+# ============================================================
+# 统一发言生成接口
+# ============================================================
+
+def get_speech_for_grade(grade, speech_type, extracted_data, script_type):
+    """根据脚本类型调用对应的生成函数"""
+    if script_type == "议题型":
+        return get_topic_speech(grade, speech_type, extracted_data)
+    else:
+        return get_event_speech(grade, speech_type, extracted_data)
+
+
+# ============================================================
+# 解析上传的脚本（增强版）
 # ============================================================
 
 def parse_docx(file_bytes):
@@ -178,17 +303,36 @@ def parse_docx(file_bytes):
         return None
 
 
-def extract_info_from_script(script_text, api_key, base_url, model):
+def extract_info_from_script(script_text, api_key, base_url, model, script_type):
+    """根据脚本类型提取关键信息"""
     if not script_text or len(script_text.strip()) < 10:
         return None
     
-    prompt = """
+    if script_type == "议题型":
+        prompt = """
+你是一位教育内容分析专家。请从下面的议题讨论脚本中提取以下关键信息：
+
+1. **核心议题**：这个讨论的核心议题是什么？用一句话概括（如"是否应该拆除旧建筑"）。
+2. **人物名字**：脚本中出现了哪些小朋友的名字？列出3-5个。
+3. **可能的观点**：脚本中提到了哪些不同的观点或立场？列出2-3个。
+
+请严格按以下JSON格式输出：
+{
+  "topic": "核心议题一句话",
+  "names": ["名字1", "名字2", "名字3"],
+  "viewpoints": ["观点1", "观点2", "观点3"]
+}
+
+脚本内容：
+""" + script_text[:2000]
+    else:
+        prompt = """
 你是一位教育内容分析专家。请从下面的故事脚本中提取以下关键信息：
 
-1. 人物名字：脚本中出现了哪些小朋友的名字？列出3-5个。
-2. 核心矛盾：脚本中最核心的冲突或矛盾是什么？用一句话概括。
-3. 场景：事件发生的主要场景是什么？
-4. 关键物品：脚本中提到了哪些具体物品？
+1. **人物名字**：脚本中出现了哪些小朋友的名字？列出3-5个。
+2. **核心矛盾**：脚本中最核心的冲突或矛盾是什么？用一句话概括。
+3. **场景**：事件发生的主要场景是什么？
+4. **关键物品**：脚本中提到了哪些具体物品？
 
 请严格按以下JSON格式输出：
 {
@@ -198,7 +342,7 @@ def extract_info_from_script(script_text, api_key, base_url, model):
   "items": ["物品1", "物品2"]
 }
 
-故事脚本内容：
+脚本内容：
 """ + script_text[:2000]
 
     try:
@@ -434,8 +578,8 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
 # 主界面
 # ============================================================
 
-st.title("🔬 AI指令词诊断与自动优化工具 v4.0")
-st.markdown("选择年级 → 上传故事脚本 → AI自动提取信息 → 生成对应年级的模拟发言 → 测试AI指令词")
+st.title("🔬 AI指令词诊断与自动优化工具 v5.0")
+st.markdown("选择年级 → 上传故事脚本 → 自动识别脚本类型 → 生成模拟发言 → 测试AI指令词")
 
 with st.sidebar:
     st.header("📋 功能")
@@ -452,14 +596,23 @@ with st.sidebar:
 
 if menu == "📖 说明":
     st.markdown("""
-    ## 📖 使用说明（v4.0）
+    ## 📖 使用说明（v5.0）
+    
+    ### 🆕 新功能：双模式支持
+    
+    工具会自动识别脚本类型：
+    
+    | 脚本类型 | 适用场景 | 示例 |
+    |---------|---------|------|
+    | **事件型** | 有情节、有冲突的故事 | 《不能没有礼物的日子》、《小宇撞坏了小美的作品》 |
+    | **议题型** | 需要表达观点和理由的讨论 | 《你赞成拆除城市的旧建筑吗？》 |
     
     ### 核心功能
     
-    1. **选择年级**：下拉选择1-2年级 / 3年级 / 4年级 / 5年级 / 6-7年级
+    1. **选择年级**：1-2年级 / 3年级 / 4年级 / 5年级 / 6-7年级
     2. **上传脚本**：上传本节课的故事脚本（Word或文本）
-    3. **AI自动提取**：从脚本中提取人物、核心矛盾、场景、关键物品
-    4. **生成模拟发言**：根据年级自动生成9种类型的模拟发言
+    3. **自动识别**：工具自动判断是事件型还是议题型
+    4. **生成模拟发言**：根据类型和年级生成9种模拟发言
     5. **测试AI**：用生成的发言测试你的AI指令词，自动诊断并优化
     """)
 
@@ -493,7 +646,7 @@ else:
     st.caption("📌 " + grade + "特征：句子长度 " + str(grade_info["sentence_len"][0]) + "-" + str(grade_info["sentence_len"][1]) + "字 | " + grade_info["features"])
 
     st.subheader("📤 上传本节课的故事脚本")
-    st.caption("上传Word文档（.docx）或文本文件（.txt），AI将自动提取关键信息")
+    st.caption("上传Word文档（.docx）或文本文件（.txt），AI将自动识别脚本类型并提取关键信息")
     
     uploaded_file = st.file_uploader("选择文件", type=["docx", "txt"], label_visibility="collapsed")
     
@@ -507,6 +660,18 @@ else:
         if script_text:
             st.success("✅ 文件读取成功，共 " + str(len(script_text)) + " 个字符")
             
+            # 自动识别脚本类型
+            detected_type = detect_script_type(script_text)
+            st.info("📌 自动识别脚本类型：**" + detected_type + "**" + ("（如识别有误，可手动选择下方模式）" if detected_type else ""))
+            
+            # 手动选择覆盖
+            script_type = st.radio(
+                "确认或手动选择脚本类型：",
+                options=["事件型", "议题型"],
+                index=0 if detected_type == "事件型" else 1,
+                horizontal=True
+            )
+            
             with st.expander("📄 查看脚本内容", expanded=False):
                 st.text(script_text[:1000] + ("..." if len(script_text) > 1000 else ""))
             
@@ -515,225 +680,4 @@ else:
                     st.error("请先在侧边栏填写API Key")
                 else:
                     with st.spinner("正在分析脚本，提取关键信息..."):
-                        extracted_data = extract_info_from_script(script_text, api_key, base_url, model)
-                        if extracted_data:
-                            st.success("✅ 提取成功！")
-                            st.session_state["extracted_data"] = extracted_data
-                            st.session_state["script_text"] = script_text
-                        else:
-                            st.error("提取失败，请检查脚本内容或重试")
-        else:
-            st.error("文件读取失败，请确认文件格式正确")
-    
-    if "extracted_data" in st.session_state:
-        extracted_data = st.session_state["extracted_data"]
-        st.subheader("📋 AI提取的关键信息")
-        st.caption("检查以下内容是否准确，如有偏差可以手动修改")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            names_str = ", ".join(extracted_data.get("names", ["小明", "小丽", "小刚"]))
-            edited_names = st.text_input("👤 人物名字", value=names_str)
-            extracted_data["names"] = [n.strip() for n in edited_names.split(",") if n.strip()]
-            
-            conflict = extracted_data.get("conflict", "")
-            edited_conflict = st.text_input("⚡ 核心矛盾", value=conflict)
-            extracted_data["conflict"] = edited_conflict
-        
-        with col2:
-            scene = extracted_data.get("scene", "")
-            edited_scene = st.text_input("📍 场景", value=scene)
-            extracted_data["scene"] = edited_scene
-            
-            items_str = ", ".join(extracted_data.get("items", ["作品", "东西"]))
-            edited_items = st.text_input("📦 关键物品", value=items_str)
-            extracted_data["items"] = [i.strip() for i in edited_items.split(",") if i.strip()]
-        
-        if st.button("✅ 确认信息，生成模拟发言"):
-            st.session_state["extracted_data"] = extracted_data
-            st.session_state["extracted_confirmed"] = True
-            st.success("✅ 已确认，请往下滚动进行测试")
-    
-    st.subheader("🤖 输入本节课所有AI指令词")
-    st.caption("每个AI用 === 分隔，第一行为AI名称")
-    
-    ai_configs_input = st.text_area(
-        "AI指令词",
-        height=200,
-        placeholder="【点评AI_温柔版】\n你是一位温柔的一二年级老师，负责点评学生发言。请按照以下格式输出：\n【推荐评级】xxx\n【维度详评】xxx\n【综合点评】xxx\n===\n【点评AI_严格版】\n你是一位严格的一二年级老师..."
-    )
-    
-    st.subheader("📝 测试设置")
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        test_types = st.multiselect(
-            "选择测试类型",
-            options=[t["id"] for t in SPEECH_TYPES_CONFIG],
-            format_func=lambda x: next((t["desc"] for t in SPEECH_TYPES_CONFIG if t["id"] == x), x),
-            default=[t["id"] for t in SPEECH_TYPES_CONFIG]
-        )
-    with col2:
-        samples_per_type = st.slider("每种类型生成几条", min_value=1, max_value=2, value=1)
-    
-    if st.button("🔬 开始诊断并自动优化", type="primary", use_container_width=True):
-        if not api_key:
-            st.error("请先在侧边栏填写API Key")
-            st.stop()
-        if not course_name:
-            st.error("请填写课程名称")
-            st.stop()
-        if not ai_configs_input:
-            st.error("请粘贴AI指令词")
-            st.stop()
-        if not test_types:
-            st.error("请至少选择一种发言类型")
-            st.stop()
-        
-        if "extracted_data" not in st.session_state or not st.session_state.get("extracted_confirmed", False):
-            st.error("请先上传脚本并确认提取信息")
-            st.stop()
-        
-        extracted_data = st.session_state["extracted_data"]
-        
-        speeches = []
-        for _ in range(samples_per_type):
-            for speech_type in test_types:
-                speech_text = get_speech_for_grade(grade, speech_type, extracted_data)
-                speech_desc = next((t["desc"] for t in SPEECH_TYPES_CONFIG if t["id"] == speech_type), speech_type)
-                speeches.append({
-                    "type": speech_type,
-                    "desc": speech_desc,
-                    "speech": speech_text
-                })
-        
-        st.success("✅ 已生成 " + str(len(speeches)) + " 条模拟发言（" + grade + "）")
-        
-        ai_configs = parse_ai_configs(ai_configs_input)
-        if not ai_configs:
-            st.error("AI指令词解析失败")
-            st.stop()
-        
-        st.success("✅ 已解析 " + str(len(ai_configs)) + " 个AI")
-        for c in ai_configs:
-            st.caption("  - " + c['name'] + " (" + c['role'] + ")")
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        results = []
-        total = len(ai_configs) * len(speeches)
-        idx = 0
-        
-        for ai_config in ai_configs:
-            for speech in speeches:
-                idx += 1
-                status_text.text("⏳ 测试中: " + ai_config['name'] + " × " + speech['type'] + " (" + str(idx) + "/" + str(total) + ")")
-                progress_bar.progress(idx / total)
-                
-                feedback = call_ai(api_key, base_url, model, ai_config["prompt"], speech["speech"])
-                results.append({
-                    "AI名称": ai_config["name"],
-                    "AI角色": ai_config["role"],
-                    "原始指令词": ai_config["prompt"],
-                    "发言类型": speech["type"],
-                    "发言说明": speech["desc"],
-                    "模拟发言": speech["speech"],
-                    "AI点评": feedback
-                })
-                time.sleep(0.2)
-        
-        status_text.text("✅ 测试完成！")
-        progress_bar.progress(1.0)
-        
-        df = pd.DataFrame(results)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        st.success("🎉 测试完成！共 " + str(len(results)) + " 条点评记录")
-        
-        st.subheader("📋 诊断与优化结果")
-        
-        all_diagnoses = []
-        
-        for ai_name in df["AI名称"].unique():
-            ai_df = df[df["AI名称"] == ai_name]
-            ai_role = ai_df["AI角色"].iloc[0]
-            ai_prompt = ai_df["原始指令词"].iloc[0]
-            
-            with st.spinner("🔍 正在分析 " + ai_name + " 并生成优化方案..."):
-                diagnosis = diagnose_ai_performance(ai_name, ai_role, ai_prompt, ai_df, api_key, base_url, model)
-                all_diagnoses.append({
-                    "name": ai_name,
-                    "role": ai_role,
-                    "original_prompt": ai_prompt,
-                    "issues": diagnosis["issues"],
-                    "strengths": diagnosis["strengths"],
-                    "warnings": diagnosis["warnings"],
-                    "total_issues": diagnosis["total_issues"],
-                    "total_strengths": diagnosis["total_strengths"],
-                    "total_warnings": diagnosis["total_warnings"],
-                    "optimized_prompt": diagnosis["optimized_prompt"]
-                })
-                time.sleep(0.3)
-        
-        for diag in all_diagnoses:
-            status_icon = "✅" if not diag["issues"] else "⚠️"
-            with st.expander(status_icon + " " + diag['name'] + " (" + diag['role'] + ") — 问题: " + str(diag['total_issues']) + "个", expanded=True):
-                
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("🔴 问题", diag["total_issues"])
-                with col2:
-                    st.metric("🟢 优点", diag["total_strengths"])
-                with col3:
-                    st.metric("🟡 提醒", diag["total_warnings"])
-                
-                if diag["strengths"]:
-                    st.markdown("**✅ 优点：**")
-                    for s in diag["strengths"]:
-                        st.markdown("- " + s)
-                
-                if diag["issues"]:
-                    st.markdown("**❌ 需要修改的问题：**")
-                    for issue in diag["issues"]:
-                        st.markdown("- " + issue)
-                
-                if diag["warnings"]:
-                    st.markdown("**🟡 值得注意：**")
-                    for w in diag["warnings"]:
-                        st.markdown("- " + w)
-                
-                if diag["optimized_prompt"] and "优化失败" not in diag["optimized_prompt"]:
-                    st.markdown("---")
-                    st.markdown("**✨ AI自动优化后的指令词**")
-                    st.caption("🟢 绿色行 = 新增或修改的内容")
-                    
-                    highlighted, changes = highlight_diff(diag["original_prompt"], diag["optimized_prompt"])
-                    
-                    col_left, col_right = st.columns(2)
-                    with col_left:
-                        st.markdown("**📄 原始版本**")
-                        st.code(diag["original_prompt"], language="text")
-                    with col_right:
-                        st.markdown("**📝 优化版本（🟢标注变更）**")
-                        st.code(highlighted, language="text")
-                    
-                    st.download_button(
-                        label="📋 下载 " + diag['name'] + " 优化版",
-                        data=diag["optimized_prompt"],
-                        file_name=diag['name'] + "_优化版.txt",
-                        mime="text/plain",
-                        key="download_" + diag['name'] + "_" + timestamp
-                    )
-                    st.caption("💡 直接复制右侧优化版本，替换你原来的指令词即可")
-                else:
-                    st.markdown("---")
-                    st.markdown("🎉 **该AI表现良好，无需优化！**")
-                
-                st.markdown("---")
-                st.markdown("**📝 详细测试记录**")
-                ai_df = df[df["AI名称"] == diag["name"]]
-                for _, row in ai_df.iterrows():
-                    with st.expander("📌 " + row['发言说明']):
-                        st.markdown("**模拟发言：**")
-                        st.info(row["模拟发言"])
-                        st.mark
+                        extracted_data = extract_info
