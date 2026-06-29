@@ -112,7 +112,6 @@ def parse_custom_names(text):
     """解析用户输入的名字列表"""
     if not text or not text.strip():
         return None
-    # 按逗号、中文逗号、空格、换行分割
     items = re.split(r'[,，、\s\n]+', text.strip())
     items = [item.strip() for item in items if item.strip()]
     return items if items else None
@@ -126,7 +125,6 @@ def parse_custom_items(text):
         line = line.strip()
         if not line:
             continue
-        # 支持中英文逗号分割
         parts = re.split(r'[,，]\s*', line)
         if len(parts) >= 3:
             items.append((parts[0].strip(), parts[1].strip(), parts[2].strip()))
@@ -177,14 +175,12 @@ def generate_student_speech_with_custom(
 ):
     """使用自定义词汇生成模拟发言"""
     
-    # 使用自定义词汇或默认词汇
     name_pool = names if names else DEFAULT_NAMES
     item_pool = items if items else DEFAULT_ITEMS
     trait_pool = traits if traits else DEFAULT_TRAITS
     fuzzy_pool = fuzzy_traits if fuzzy_traits else DEFAULT_FUZZY
     job_pool = jobs if jobs else DEFAULT_JOBS
     
-    # 如果词库为空，使用默认
     if not name_pool:
         name_pool = DEFAULT_NAMES
     if not item_pool:
@@ -200,7 +196,6 @@ def generate_student_speech_with_custom(
     item, action, new_use = random.choice(item_pool)
     trait1, job1, reason1 = random.choice(trait_pool)
     
-    # 选第二个不同的特点
     remaining = [t for t in trait_pool if t[0] != trait1]
     trait2, job2, reason2 = random.choice(remaining) if remaining else random.choice(trait_pool)
     
@@ -627,13 +622,11 @@ else:
             "items": parse_custom_items(custom_items) if custom_items else None,
             "traits": parse_custom_traits(custom_traits) if custom_traits else None,
             "fuzzy": parse_custom_fuzzy(custom_fuzzy) if custom_fuzzy else None,
-            "jobs": None  # 从traits中提取工作名作为备用
+            "jobs": None
         }
-        # 从traits中提取工作名
         if custom_data["traits"]:
             custom_data["jobs"] = [t[1] for t in custom_data["traits"]]
         
-        # 显示使用了哪些词汇
         using_custom = any(v is not None for v in custom_data.values())
         if using_custom:
             st.info("✅ 正在使用你自定义的词汇生成模拟发言")
@@ -799,17 +792,4 @@ else:
             st.download_button(
                 label="📥 一键下载所有优化版指令词",
                 data=all_optimized,
-                file_name=f"所有优化版指令词_{course_name}_{timestamp}.txt",
-                mime="text/plain"
-            )
-        
-        # ---- 保存历史 ----
-        save_data = {
-            "course": course_name,
-            "timestamp": timestamp,
-            "ai_count": len(ai_configs),
-            "ai_names": [c["name"] for c in ai_configs],
-            "diagnoses": all_diagnoses
-        }
-        with open(os.path.join(HISTORY_DIR, f"{course_name}_{timestamp}.json"), "w", encoding="utf-8") as f:
-       json.dump(save_data, f, ensure_ascii=False, indent=2)
+               
