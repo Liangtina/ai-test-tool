@@ -11,7 +11,7 @@ import difflib
 import docx
 import io
 
-st.set_page_config(page_title="AI指令词诊断与自动优化工具 v5.1", page_icon="🔬", layout="wide")
+st.set_page_config(page_title="AI指令词诊断与自动优化工具 v5.2", page_icon="🔬", layout="wide")
 HISTORY_DIR = "test_history"
 os.makedirs(HISTORY_DIR, exist_ok=True)
 
@@ -197,42 +197,51 @@ def parse_docx(file_bytes):
         return None
 
 def extract_info_from_script(script_text, api_key, base_url, model, script_type):
+    """提取脚本关键信息，支持长文本（最多8000字符）"""
     if not script_text or len(script_text.strip()) < 10:
         return None
+    
+    # 提取前8000字符（足够覆盖完整脚本）
+    max_chars = 8000
+    truncated_text = script_text[:max_chars]
+    if len(script_text) > max_chars:
+        truncated_text += "\n\n...（脚本较长，已截取前8000字符）"
+    
     if script_type == "议题型":
-        prompt = """你是一位教育内容分析专家。请从下面的议题讨论脚本中提取以下关键信息，严格按JSON格式输出：
+        prompt = f"""你是一位教育内容分析专家。请从下面的议题讨论脚本中提取以下关键信息，严格按JSON格式输出：
 
-{
+{{
   "names": ["人物名字1", "人物名字2", "人物名字3"],
-  "question": "脚本中直接问读者/学生的问题是什么？原话摘录",
+  "question": "脚本中直接问读者/学生的问题是什么？原话摘录。如果有多个问题，全部合并列出。",
   "viewpoints": ["观点1", "观点2"]
-}
+}}
 
 脚本内容：
-""" + script_text[:2000]
+{truncated_text}"""
     else:
-        prompt = """你是一位教育内容分析专家。请从下面的故事脚本中提取以下关键信息，严格按JSON格式输出：
+        prompt = f"""你是一位教育内容分析专家。请从下面的故事脚本中提取以下关键信息，严格按JSON格式输出：
 
-{
+{{
   "names": ["人物名字1", "人物名字2", "人物名字3"],
-  "question": "脚本中直接问读者/学生的问题是什么？原话摘录。如果有多轮对话问题，提取最核心的那个问题。",
+  "question": "脚本中直接问读者/学生的问题是什么？原话摘录。如果有多个问题（如多轮对话、单轮对话中的问题），请全部提取合并。",
   "conflict": "核心矛盾一句话概括",
   "scene": "主要场景",
   "items": ["物品1", "物品2"]
-}
+}}
 
 脚本内容：
-""" + script_text[:2000]
+{truncated_text}"""
+    
     try:
         client = OpenAI(api_key=api_key, base_url=base_url)
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "你是一位教育内容分析专家。请严格按照JSON格式输出，不要添加任何其他内容。如果脚本中没有明确的问题，请根据脚本内容推断读者需要思考的核心问题。"},
+                {"role": "system", "content": "你是一位教育内容分析专家。请仔细阅读脚本全文，提取所有直接问读者/学生的问题。严格按照JSON格式输出，不要添加任何其他内容。"},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_tokens=800
+            max_tokens=1000
         )
         content = response.choices[0].message.content
         json_match = re.search(r'\{[\s\S]*\}', content)
@@ -401,7 +410,7 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
             optimized_prompt = "优化失败: " + str(e)
     return {"issues": issues, "strengths": strengths, "warnings": warnings, "total_issues": len(issues), "total_strengths": len(strengths), "total_warnings": len(warnings), "optimized_prompt": optimized_prompt}
 
-st.title("🔬 AI指令词诊断与自动优化工具 v5.1")
+st.title("🔬 AI指令词诊断与自动优化工具 v5.2")
 st.markdown("选择年级 → 上传故事脚本 → 自动提取核心问题 → 生成围绕问题的模拟发言 → 测试AI指令词")
 
 with st.sidebar:
@@ -415,20 +424,15 @@ with st.sidebar:
     st.caption("📁 历史记录: " + str(len(os.listdir(HISTORY_DIR))) + " 条")
 
 if menu == "📖 说明":
-    st.markdown("""## 📖 使用说明（v5.1）
+    st.markdown("""## 📖 使用说明（v5.2）
     
-    ### 🆕 核心升级：围绕核心问题生成模拟发言
+    ### 🆕 升级：支持长脚本提取
     
-    v5.1 会自动从脚本中提取"核心问题"，所有模拟发言都围绕这个问题展开，确保测试不跑题。
-    
-    ### 双模式支持
-    工具会自动识别脚本类型：
-    - **事件型**：有情节、有冲突的故事（如《不能没有礼物的日子》）
-    - **议题型**：需要表达观点和理由的讨论（如《你赞成拆除城市的旧建筑吗？》）
+    v5.2 将脚本读取上限从 2000 字符提升到 **8000 字符**，能够完整读取包含对话表格的完整剧本。
     
     ### 核心功能
     1. **选择年级**：1-2年级 / 3年级 / 4年级 / 5年级 / 6-7年级
-    2. **上传脚本**：上传本节课的故事脚本（Word或文本）
+    2. **上传脚本**：上传本节课的故事脚本（Word或文本），最长支持8000字符
     3. **自动提取**：提取人物、核心矛盾、场景、**核心问题**
     4. **确认问题**：检查提取的问题是否正确，可以手动修改
     5. **生成模拟发言**：围绕核心问题生成9种模拟发言
@@ -457,7 +461,7 @@ else:
     st.caption("📌 " + grade + "特征：句子长度 " + str(grade_info["sentence_len"][0]) + "-" + str(grade_info["sentence_len"][1]) + "字 | " + grade_info["features"])
 
     st.subheader("📤 上传本节课的故事脚本")
-    st.caption("上传Word文档（.docx）或文本文件（.txt），AI将自动识别脚本类型并提取关键信息，包括核心问题")
+    st.caption("上传Word文档（.docx）或文本文件（.txt），最长支持8000字符，AI将自动提取关键信息")
     uploaded_file = st.file_uploader("选择文件", type=["docx", "txt"], label_visibility="collapsed")
     if uploaded_file is not None:
         file_bytes = uploaded_file.read()
@@ -466,11 +470,12 @@ else:
         else:
             script_text = file_bytes.decode("utf-8", errors="ignore")
         if script_text:
-            st.success("✅ 文件读取成功，共 " + str(len(script_text)) + " 个字符")
+            char_count = len(script_text)
+            st.success("✅ 文件读取成功，共 " + str(char_count) + " 个字符" + ("（已超出8000字符限制，将截取前8000字符）" if char_count > 8000 else ""))
             detected_type = detect_script_type(script_text)
             st.info("📌 自动识别脚本类型：**" + detected_type + "**")
             script_type = st.radio("确认或手动选择脚本类型：", options=["事件型", "议题型"], index=0 if detected_type == "事件型" else 1, horizontal=True)
-            with st.expander("📄 查看脚本内容", expanded=False):
+            with st.expander("📄 查看脚本内容（前1000字符）", expanded=False):
                 st.text(script_text[:1000] + ("..." if len(script_text) > 1000 else ""))
             if st.button("🤖 AI自动提取关键信息", type="primary"):
                 if not api_key:
@@ -518,7 +523,7 @@ else:
                     extracted_data["viewpoints"] = ["赞成", "反对"]
         with col2:
             question = extracted_data.get("question", "")
-            edited_question = st.text_area("💬 核心问题（模拟发言将围绕这个问题展开）", value=question, height=100)
+            edited_question = st.text_area("💬 核心问题（模拟发言将围绕这个问题展开）", value=question, height=120)
             extracted_data["question"] = edited_question
             if script_type == "事件型":
                 items_str = ", ".join(extracted_data.get("items", ["作品", "东西"]))
