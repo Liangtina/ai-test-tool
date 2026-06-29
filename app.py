@@ -682,7 +682,13 @@ else:
                     "name": ai_name,
                     "role": ai_role,
                     "original_prompt": ai_prompt,
-                    **diagnosis
+                    "issues": diagnosis["issues"],
+                    "strengths": diagnosis["strengths"],
+                    "warnings": diagnosis["warnings"],
+                    "total_issues": diagnosis["total_issues"],
+                    "total_strengths": diagnosis["total_strengths"],
+                    "total_warnings": diagnosis["total_warnings"],
+                    "optimized_prompt": diagnosis["optimized_prompt"]
                 })
                 time.sleep(0.3)
         
@@ -723,5 +729,4 @@ else:
                     
                     col_left, col_right = st.columns(2)
                     with col_left:
-                        st.markdown("**📄 原始版本**")
-                        st.code(diag["original_prompt
+                        st.markdown("**📄
