@@ -11,7 +11,7 @@ import difflib
 import docx
 import io
 
-st.set_page_config(page_title="AI指令词诊断与自动优化工具 v5.0", page_icon="🔬", layout="wide")
+st.set_page_config(page_title="AI指令词诊断与自动优化工具 v5.1", page_icon="🔬", layout="wide")
 HISTORY_DIR = "test_history"
 os.makedirs(HISTORY_DIR, exist_ok=True)
 
@@ -24,90 +24,89 @@ GRADE_CONFIG = {
 }
 
 SPEECH_TYPES_CONFIG = [
-    {"id": "完整优秀", "desc": "✅ 完整发言（所有维度表现好）"},
-    {"id": "观点模糊", "desc": "⚠️ 观点模糊，没有抓住核心矛盾"},
-    {"id": "论据空洞", "desc": "⚠️ 观点明确但论据不足"},
-    {"id": "逻辑混乱", "desc": "⚠️ 逻辑不清，结构混乱"},
-    {"id": "语言粗糙", "desc": "⚠️ 语言表达有问题"},
-    {"id": "缺乏共情", "desc": "⚠️ 通情达意出问题，缺少人文关怀"},
-    {"id": "只说立场没理由", "desc": "⚠️ 只说立场没有论证"},
-    {"id": "跑题抓错矛盾", "desc": "⚠️ 核心方向错误，跑题"},
-    {"id": "单维度深挖", "desc": "✅ 部分维度突出，有亮点"}
+    {"id": "完整优秀", "desc": "✅ 完整发言（观点明确+理由充分+结构完整+表达流畅+有人文关怀）"},
+    {"id": "观点模糊", "desc": "⚠️ 观点模糊，没有抓住核心问题"},
+    {"id": "论据空洞", "desc": "⚠️ 观点明确但论据不足，说不出理由"},
+    {"id": "逻辑混乱", "desc": "⚠️ 逻辑不清，思路跳跃，结构混乱"},
+    {"id": "语言粗糙", "desc": "⚠️ 语言表达有问题，用词不准"},
+    {"id": "缺乏共情", "desc": "⚠️ 只讲道理，缺少对人的关心和理解"},
+    {"id": "只说立场没理由", "desc": "⚠️ 只说立场，没有论证"},
+    {"id": "跑题抓错矛盾", "desc": "⚠️ 回答偏离了核心问题"},
+    {"id": "单维度深挖", "desc": "✅ 从一个角度深入，有亮点但不够全面"}
 ]
 
 def detect_script_type(script_text):
     if not script_text:
         return "事件型"
-    topic_keywords = ["赞成", "反对", "是否", "应该", "你认为", "怎么看", "观点", "看法", "立场", "议题", "讨论"]
+    topic_keywords = ["赞成", "反对", "是否", "应该", "你认为", "怎么看", "观点", "看法", "立场", "议题", "讨论", "价值"]
     for kw in topic_keywords:
         if kw in script_text:
             return "议题型"
     return "事件型"
 
 def get_event_speech(grade, speech_type, extracted_data):
+    """事件型：围绕核心问题生成模拟发言"""
     names = extracted_data.get("names", ["小明", "小丽", "小刚"])
-    items = extracted_data.get("items", ["作品", "东西"])
+    question = extracted_data.get("question", "你有什么特点？")
     if not names or not isinstance(names, list):
         names = ["小明", "小丽", "小刚"]
-    if not items or not isinstance(items, list):
-        items = ["作品", "东西"]
     name = random.choice(names)
-    item = random.choice(items)
+    
     templates = {
         "1-2年级": {
-            "完整优秀": f"我觉得{name}应该跟对方说对不起，因为弄坏了别人的{item}是不对的。然后他可以问对方要不要帮忙修一下。",
-            "观点模糊": f"我觉得他们两个都有点不对，我也不知道该怎么办，反正就是要和好吧。",
-            "论据空洞": f"我觉得{name}应该赔钱，因为弄坏东西就是要赔的，我妈妈说的。",
-            "逻辑混乱": f"我觉得……首先呢，{name}是男生，比较皮。然后呢，对方肯定很生气。对了，我觉得老师应该去调解。",
-            "语言粗糙": f"我觉得这事吧，就{name}不对。他跑那么快干啥呀。然后对方也，东西放那儿也不对。",
-            "缺乏共情": f"我觉得很简单，{name}弄坏了就要赔。按照规矩办事就行了。",
-            "只说立场没理由": f"我觉得{name}应该道歉。",
-            "跑题抓错矛盾": f"我觉得学校应该规定课间不能乱跑，这样就不会发生这种事了。",
-            "单维度深挖": f"我觉得{name}应该先问对方'你希望我怎么做'。"
+            "完整优秀": f"我觉得{name}有特点，{question}我来说说吧。我觉得自己有点不一样的地方，就是遇到事情会想一想怎么做。我觉得这个特点适合当小班长，因为小班长要帮老师做事，想一想才能把事情做好。",
+            "观点模糊": f"嗯……{question}我好像也没什么特别的特点吧，就是普通的孩子。特点变优点？我也不知道。",
+            "论据空洞": f"我觉得我的特点是跑得快，跑得快就是优点啊，没什么好说的。",
+            "逻辑混乱": f"我觉得……我的特点是？哦对了，我画画好。然后呢……画画好的人可以当画家？还是当别的？反正就是好吧。",
+            "语言粗糙": f"我特点就是爱玩，玩好了就心情好。问题啥的，不懂。",
+            "缺乏共情": f"我觉得特点就是特点，不用管别人怎么想。反正我觉得自己挺好的。",
+            "只说立场没理由": f"我觉得我的特点是跑得快。",
+            "跑题抓错矛盾": f"我觉得这个问题不重要，我们应该想想课间吃什么。",
+            "单维度深挖": f"我觉得我的特点是很爱观察。上次在操场上，我发现了别人没注意到的东西。我觉得爱观察的人，以后可以当科学家，因为科学家就是要观察。"
         },
         "3年级": {
-            "完整优秀": f"我觉得{name}应该先真诚地向对方道歉，因为弄坏了别人的{item}就是不对。然后他可以问问对方，是想要赔钱还是想要帮忙重新做一个。",
-            "观点模糊": f"我觉得这件事……嗯……应该要好好处理。反正他们两个都有点不对。",
-            "论据空洞": f"我觉得{name}应该赔偿对方。因为做错了事就要负责任，我们老师也是这么说的。",
-            "逻辑混乱": f"我觉得……首先呢，{name}不应该那么不小心。然后呢，对方肯定很心疼。对了，班长应该去帮忙调解。",
-            "语言粗糙": f"我觉得这事吧，就是{name}不对。他跑那么快干啥呀。反正就他俩的事，好好说说就行了。",
-            "缺乏共情": f"我觉得这件事很简单。{name}弄坏了就要赔，按规矩办事。",
-            "只说立场没理由": f"我觉得{name}应该赔偿对方的损失。",
-            "跑题抓错矛盾": f"我觉得这件事告诉我们，课间不能乱跑，学校应该管得更严一点。",
-            "单维度深挖": f"我觉得{name}应该先问问对方最在意的是什么。"
+            "完整优秀": f"我觉得{name}有特点，{question}我想说，我的特点是比较细心。上次大家都没发现的问题，我发现了。我觉得这个特点适合当小组长，因为小组长要检查作业，细心的人才能检查好。",
+            "观点模糊": f"这个问题……嗯……好像每个人都有自己的特点吧。我也不知道我有什么特点，反正就是普通的小朋友。",
+            "论据空洞": f"我觉得我的特点是跑得快，跑得快就是优点。老师也说过跑得快好。",
+            "逻辑混乱": f"我觉得……首先，我的特点是画画好。然后呢，画画好的人可以当画家。哦对了，也可以当设计师。反正画画好就是好。",
+            "语言粗糙": f"我特点就是爱说话，说话能让别人开心。这个问题就这样吧。",
+            "缺乏共情": f"特点就是特点，不用管别人怎么看。自己觉得好就行了。",
+            "只说立场没理由": f"我觉得我的特点是安静。",
+            "跑题抓错矛盾": f"我觉得这个问题不重要，我们应该聊聊别的事情。",
+            "单维度深挖": f"我觉得我的特点是特别爱帮助别人。上次同学忘记带笔，我借给他了。我觉得爱帮助人的人，可以当志愿者，因为志愿者就是帮助别人。"
         },
         "4年级": {
-            "完整优秀": f"我觉得{name}应该先向对方真诚道歉，因为弄坏别人的{item}就是不对的。然后他要问清楚对方最在意什么——是花了多少钱，还是花了多少时间。然后根据对方的回答，再商量怎么弥补。",
-            "观点模糊": f"我觉得这件事双方都有责任，{name}确实不小心，但对方把东西放在那里也有点不小心。",
-            "论据空洞": f"我觉得{name}应该赔偿，因为损坏别人的东西就要赔偿，这是原则。",
-            "逻辑混乱": f"我觉得……首先，{name}应该反省自己的行为。然后呢，对方也应该理解一下。然后……对了，我觉得老师可以帮忙调解。",
-            "语言粗糙": f"我觉得{name}不对，他太不小心了。对方也很难过，东西坏了谁都心疼。但是，呃，大家各退一步就好了。",
-            "缺乏共情": f"我觉得这事按规则处理就行了。{name}弄坏了，该赔多少赔多少。",
-            "只说立场没理由": f"我觉得{name}应该向对方道歉并赔偿。",
-            "跑题抓错矛盾": f"我觉得这件事说明学校的安全管理有问题。如果课间秩序更好一些，就不会发生这种事了。",
-            "单维度深挖": f"我觉得{name}应该先了解对方真正的感受和需求。每个人对'失去'的反应不同。"
+            "完整优秀": f"我觉得{name}有特点，{question}我觉得我的特点是很会观察。比如上次科学课，我发现了别人没注意到的细节。我觉得这个特点适合当科学家，因为科学家就是要仔细观察才能发现秘密。当然，这个特点在写作文的时候也很有用。",
+            "观点模糊": f"这个问题好像有点难回答。每个人都有自己的特点吧，但我不知道我的特点是什么，可能还要再想想。",
+            "论据空洞": f"我觉得我的特点是认真，认真就是优点。老师经常表扬认真的人。",
+            "逻辑混乱": f"我觉得我的特点是……嗯，比较有耐心。然后有耐心的人适合当老师？还是当医生？我觉得都可以吧，反正就是有耐心。",
+            "语言粗糙": f"我特点就是爱打篮球，打篮球很厉害。这个问题还有什么好说的。",
+            "缺乏共情": f"我觉得特点就是自己的事，不用考虑别人怎么想。自己觉得好就行。",
+            "只说立场没理由": f"我觉得我的特点是画画好。",
+            "跑题抓错矛盾": f"我觉得这个问题意义不大，我们应该讨论更有实际意义的话题。",
+            "单维度深挖": f"我觉得我的特点是有耐心。上次做手工，我花了很长时间完成了，别人都放弃了。我觉得有耐心的人，以后可以当老师，因为老师要一遍一遍教学生，没有耐心不行。"
         },
         "5年级": {
-            "完整优秀": f"我认为这件事的核心不是赔偿问题，而是{name}能否真诚面对自己的错误。首先，{name}应该主动道歉，要表达自己理解对方的感受。其次，要了解对方最希望得到什么样的弥补。最后，双方一起商量出都能接受的方案。",
-            "观点模糊": f"我觉得这件事双方都有一定的责任吧。{name}确实不小心，但对方把东西放在那个位置也不太安全。具体怎么解决，我也说不太清楚。",
-            "论据空洞": f"我觉得{name}必须赔偿，因为损坏别人的东西就要赔偿。这是基本的规则和道德要求。",
-            "逻辑混乱": f"关于这件事，我有几个想法。第一，{name}应该道歉。第二，对方也有责任。第三，老师应该参与调解。反正就是这些吧。",
-            "语言粗糙": f"我觉得{name}这事做得不对，他太不小心了。然后对方呢，东西被弄坏了肯定会生气。反正就是各退一步。",
-            "缺乏共情": f"我认为这是一个简单的责任认定问题。{name}的行为造成了损害，就应该承担相应责任。",
-            "只说立场没理由": f"我认为{name}应当为自己的行为负责，向对方道歉并做出相应赔偿。",
-            "跑题抓错矛盾": f"我觉得这件事暴露出学校管理的一个漏洞。如果学校有更完善的安全制度，类似事件就能避免。",
-            "单维度深挖": f"我认为这个问题的关键在'换位思考'。{name}需要真正站在对方的立场去感受。"
+            "完整优秀": f"我觉得{name}有特点，{question}我认为我的特点是比较善于倾听。在小组讨论时，我会先听别人说完再表达自己的看法。我觉得这个特点适合当调解员，因为调解员需要先理解双方的想法，才能帮助解决问题。",
+            "观点模糊": f"每个人都有自己的特点，这个我同意。但具体是什么特点，在不同的场景下表现可能不一样。所以很难说哪个特点是最好的。",
+            "论据空洞": f"我觉得我的特点是诚实，诚实是一种美德，所以一定是优点。不需要更多的理由。",
+            "逻辑混乱": f"关于这个问题，我有几个想法。第一，我觉得我的特点是有责任心。第二，有责任心的人适合当班干部。第三，但是我有时候也会忘记带作业。所以……好像也不一定。",
+            "语言粗糙": f"我觉得我的特点就是靠谱，答应的事情会做到。这个特点挺好的，就是这样。",
+            "缺乏共情": f"我认为特点的价值在于它本身，而不在于别人怎么评价。重要的是自己认可自己。",
+            "只说立场没理由": f"我认为我的特点是责任心强。",
+            "跑题抓错矛盾": f"我觉得这个问题本身就不太对。特点能不能变成优点，要看别人怎么看待，不是一个简单的是非问题。",
+            "单维度深挖": f"我认为我的特点是同理心比较强。上次同桌因为没考好很难过，我能感受到她的心情。我觉得有同理心的人，以后可以当心理咨询师或者医生，因为能理解病人的感受是很重要的。"
         },
         "6-7年级": {
-            "完整优秀": f"我认为这件事的核心不是简单的赔偿问题，而是关乎责任认知与人际修复的深层议题。首先，{name}需要完成一次真诚的自我反思。其次，双方需要开放地沟通各自的需求与期待。最后，共同制定一个具体的、可执行的修复方案。",
-            "观点模糊": f"我觉得这件事要从多个角度来看。一方面，{name}确实有不小心的责任；另一方面，对方把东西放在那里也有一定风险。",
-            "论据空洞": f"我认为{name}应该承担赔偿责任。因为从基本的社会规则来看，造成他人损失就需要补偿。",
-            "逻辑混乱": f"我想从几个层面来分析这件事。首先，关于责任归属……嗯，{name}确实有过失。其次，关于解决方式……可能需要道歉和赔偿。",
-            "语言粗糙": f"我觉得{name}肯定要道歉啊，这事就是他不对。他太不小心了，把别人辛辛苦苦做的东西弄坏了。",
-            "缺乏共情": f"我认为这是一个典型的责任认定案例。从行为结果来看，{name}造成了损害；从因果关系来看，损害与行为直接相关。",
-            "只说立场没理由": f"我认为{name}应当为自己的过失行为承担全部责任，包括诚恳道歉和物质赔偿。",
-            "跑题抓错矛盾": f"这件事让我思考的是学校在冲突调解机制上的不足。我们应该把注意力放在制度建设上。",
-            "单维度深挖": f"我认为这个案例最值得深思的是'同理心'在冲突解决中的核心作用。"
+            "完整优秀": f"我觉得{name}有特点，{question}我认为我的特点是批判性思维。我不太容易轻信一个观点，会自己想一想是不是有道理。比如在讨论中，我会先分析对方说的有没有漏洞，再形成自己的看法。我觉得这个特点适合从事法律或研究类的工作，因为这类工作需要独立判断和深度分析。当然，在团队合作中，我也需要学会更好地表达自己的观点。",
+            "观点模糊": f"这个问题触及了一个本质问题：如何定义'特点'。在不同的语境下，同样的特质可能表现为优点或缺点。所以我认为，这个问题没有标准答案。",
+            "论据空洞": f"我认为我的特点是勤奋。勤奋就是最大的优点，不需要解释。任何成功都离不开勤奋。",
+            "逻辑混乱": f"关于这个问题，我想从几个方面来思考。首先，勤奋是关键。其次，沟通能力也很重要。再者，思维方式也会影响。嗯……总之这些都很重要。",
+            "语言粗糙": f"我觉得我的特点就是靠谱，答应的事情一定会做到。这个特点我觉得挺好的，反正就是靠谱。",
+            "缺乏共情": f"我认为特点本身是中性的，它的价值在于被用在什么地方。这是一种理性的、效率导向的视角。",
+            "只说立场没理由": f"我认为我的特点是批判性思维和分析能力。",
+            "跑题抓错矛盾": f"我认为讨论'特点变优点'这个命题，本质上是探讨社会评价标准的问题。我们要被社会评价标准所定义吗？这才是我更关心的问题。",
+            "单维度深挖": f"我认为我的特点是比较强的自我反思能力。我经常会复盘自己做得不好的地方，然后想下次怎么改进。我觉得这个特点在几乎任何领域都能成为优点，因为反思能力能让一个人持续成长。不过，我也需要注意不要过度反思，避免陷入自我怀疑。"
         }
     }
     grade_templates = templates.get(grade, templates["3年级"])
@@ -115,66 +114,68 @@ def get_event_speech(grade, speech_type, extracted_data):
     return result if result else "发言内容待生成"
 
 def get_topic_speech(grade, speech_type, extracted_data):
-    topic = extracted_data.get("topic", "这个议题")
+    """议题型：围绕核心议题生成模拟发言"""
     names = extracted_data.get("names", ["小明", "小丽", "小刚"])
+    question = extracted_data.get("question", "这个议题")
     if not names or not isinstance(names, list):
         names = ["小明", "小丽", "小刚"]
     name = random.choice(names)
+    
     templates = {
         "1-2年级": {
-            "完整优秀": f"我觉得应该{topic}，因为这样做会让大家都更方便。我也想问一下别人的想法。",
-            "观点模糊": f"我觉得这个……我也不知道该怎么办，好像这样也行，那样也行。",
-            "论据空洞": f"我觉得应该{topic}，因为我妈妈也是这样说的。",
-            "逻辑混乱": f"我觉得……首先呢，应该{topic}。然后呢，这样比较好。对了，我还想到一个问题……算了，就这样吧。",
-            "语言粗糙": f"我觉得应该{topic}，就这样吧，挺好的。",
-            "缺乏共情": f"我觉得应该{topic}。规则就是这样的，不用想太多。",
-            "只说立场没理由": f"我觉得应该{topic}。",
+            "完整优秀": f"我觉得{name}有想法。{question}我说说我的看法。我觉得应该这样做，因为这样做对大家都好。我也想知道别人是怎么想的。",
+            "观点模糊": f"我觉得这个问题……我也不知道，好像这样也行，那样也行。",
+            "论据空洞": f"我觉得应该这样，因为我妈妈也是这样说的。",
+            "逻辑混乱": f"我觉得……首先呢，应该这样。然后呢，这样比较好。算了，就这样吧。",
+            "语言粗糙": f"我觉得应该这样，挺好的。",
+            "缺乏共情": f"我觉得应该这样。规则就是这样的，不用想太多。",
+            "只说立场没理由": f"我觉得应该这样。",
             "跑题抓错矛盾": f"我觉得这个问题不重要，我们应该关注别的事情。",
-            "单维度深挖": f"我觉得应该{topic}，因为每个人都有自己的想法，我们应该互相理解。"
+            "单维度深挖": f"我觉得应该这样，因为每个人都有自己的想法，我们应该互相理解。"
         },
         "3年级": {
-            "完整优秀": f"我觉得应该{topic}，因为这样做对大家都有好处。我也想知道别人是怎么想的。",
+            "完整优秀": f"我觉得{name}有想法。{question}我认为应该这样做，因为这样做对大家都有好处。我也想知道别人是怎么想的。",
             "观点模糊": f"我觉得这个问题……嗯……好像两边都有道理，我也不太确定。",
-            "论据空洞": f"我觉得应该{topic}，因为老师说这样做是对的。",
-            "逻辑混乱": f"我觉得……首先，应该{topic}。然后，这样比较好。对了，我还想到……反正就是这样。",
-            "语言粗糙": f"我觉得应该{topic}，就这个意思，大家都懂的。",
-            "缺乏共情": f"我觉得应该{topic}。事情就是这样，按规矩办就行了。",
-            "只说立场没理由": f"我觉得应该{topic}。",
+            "论据空洞": f"我觉得应该这样，因为老师说这样做是对的。",
+            "逻辑混乱": f"我觉得……首先，应该这样。然后，这样比较好。反正就是这样。",
+            "语言粗糙": f"我觉得应该这样，就这个意思。",
+            "缺乏共情": f"我觉得应该这样。事情就是这样，按规矩办就行了。",
+            "只说立场没理由": f"我觉得应该这样。",
             "跑题抓错矛盾": f"我觉得这个问题不重要，我们应该想点别的。",
-            "单维度深挖": f"我觉得应该{topic}，因为每个人都有自己的立场，我们需要互相理解。"
+            "单维度深挖": f"我觉得应该这样，因为每个人都有自己的立场，我们需要互相理解。"
         },
         "4年级": {
-            "完整优秀": f"我认为应该{topic}，因为这样做更合理。首先，这符合大多数人的利益；其次，这样做也能照顾到少数人的感受。我想听听大家的看法。",
+            "完整优秀": f"我觉得{name}有想法。{question}我认为应该这样做，因为这样做更合理。首先，这符合大多数人的利益；其次，这样做也能照顾到少数人的感受。我想听听大家的看法。",
             "观点模糊": f"我觉得这件事两方面都有道理，很难说哪个更好。可能要看具体情况吧。",
-            "论据空洞": f"我认为应该{topic}，因为这是正确的选择。大家都这么说，应该没错。",
-            "逻辑混乱": f"我觉得……首先，应该{topic}。然后呢，这样会更好。哦对了，我还想到一个问题……反正就是这样的。",
-            "语言粗糙": f"我觉得应该{topic}，就这样，不用搞那么复杂。",
-            "缺乏共情": f"我认为应该{topic}。这是一个理性的选择，不需要考虑太多情感因素。",
-            "只说立场没理由": f"我认为应该{topic}。",
+            "论据空洞": f"我认为应该这样做，因为这是正确的选择。大家都这么说，应该没错。",
+            "逻辑混乱": f"我觉得……首先，应该这样。然后呢，这样会更好。哦对了，我还想到一个问题……反正就是这样的。",
+            "语言粗糙": f"我觉得应该这样，就这样，不用搞那么复杂。",
+            "缺乏共情": f"我认为应该这样做。这是一个理性的选择，不需要考虑太多情感因素。",
+            "只说立场没理由": f"我认为应该这样做。",
             "跑题抓错矛盾": f"我觉得这个问题本身就有问题，我们应该讨论更重要的议题。",
-            "单维度深挖": f"我认为应该{topic}，因为每个人都有自己的立场和理由，我们需要找到大家都能接受的方案。"
+            "单维度深挖": f"我认为应该这样做，因为每个人都有自己的立场和理由，我们需要找到大家都能接受的方案。"
         },
         "5年级": {
-            "完整优秀": f"我认为应该{topic}，因为这样做能带来更大的社会价值。首先，它能促进整体的发展；其次，它也能考虑到个体的需求。当然，在实施过程中需要注意平衡各方利益。",
+            "完整优秀": f"我觉得{name}有想法。{question}我认为应该这样做，因为这样做能带来更大的价值。首先，它能促进整体的发展；其次，它也能考虑到个体的需求。当然，在实施过程中需要注意平衡各方利益。",
             "观点模糊": f"我觉得这个问题很复杂，从不同角度看有不同的理解。可能没有一个绝对正确的答案。",
-            "论据空洞": f"我认为应该{topic}，因为这显然是正确的选择。理由很简单，就是这样做对大家都好。",
-            "逻辑混乱": f"关于这个问题，我有几个想法。第一，应该{topic}。第二，这样比较合理。第三，还需要考虑其他因素。反正就是这些吧。",
-            "语言粗糙": f"我觉得应该{topic}，这个大家都明白，不用多说。",
-            "缺乏共情": f"我认为应该{topic}。这是一个效率优先的选择，不需要过多考虑情感因素。",
-            "只说立场没理由": f"我认为应该{topic}。这是合理的决策。",
+            "论据空洞": f"我认为应该这样做，因为这显然是正确的选择。理由很简单，就是这样做对大家都好。",
+            "逻辑混乱": f"关于这个问题，我有几个想法。第一，应该这样。第二，这样比较合理。第三，还需要考虑其他因素。反正就是这些吧。",
+            "语言粗糙": f"我觉得应该这样，这个大家都明白，不用多说。",
+            "缺乏共情": f"我认为应该这样做。这是一个效率优先的选择，不需要过多考虑情感因素。",
+            "只说立场没理由": f"我认为应该这样做。这是合理的决策。",
             "跑题抓错矛盾": f"我觉得这个议题本身的价值不大，我们应该关注更有建设性的方向。",
-            "单维度深挖": f"我认为应该{topic}，因为每个人都有自己的立场和价值观。真正的问题在于我们如何找到平衡点。"
+            "单维度深挖": f"我认为应该这样做，因为每个人都有自己的立场和价值观。真正的问题在于我们如何找到平衡点。"
         },
         "6-7年级": {
-            "完整优秀": f"我认为应该{topic}，因为这是符合社会发展方向的理性选择。首先，它能提升整体效率；其次，它也能保障个体的基本权益。当然，在实施过程中需要建立完善的配套机制。我想强调的是，任何决策都需要在利弊之间找到平衡。",
+            "完整优秀": f"我觉得{name}有想法。{question}我认为应该这样做，因为这是符合社会发展方向的理性选择。首先，它能提升整体效率；其次，它也能保障个体的基本权益。当然，在实施过程中需要建立完善的配套机制。我想强调的是，任何决策都需要在利弊之间找到平衡。",
             "观点模糊": f"我认为这个问题需要从多个维度来分析。从不同的立场出发，可能会得出不同的结论。这本身就是一个值得深入探讨的议题。",
-            "论据空洞": f"我认为应该{topic}，因为这是显而易见的正确选择。理由就是这样做符合常识和逻辑。",
-            "逻辑混乱": f"我想从几个层面来思考这个问题。首先，应该{topic}。其次，这符合发展趋势。再者，还需要考虑……嗯，总之就是这样。",
-            "语言粗糙": f"我觉得应该{topic}，这个没什么好讨论的，就是这样。",
-            "缺乏共情": f"我认为应该{topic}。这是一个基于效率和理性的决策，情感因素不应成为主要考量。",
-            "只说立场没理由": f"我认为应该{topic}。这是经过理性判断后的选择。",
+            "论据空洞": f"我认为应该这样做，因为这是显而易见的正确选择。理由就是这样做符合常识和逻辑。",
+            "逻辑混乱": f"我想从几个层面来思考这个问题。首先，应该这样。其次，这符合发展趋势。再者，还需要考虑……嗯，总之就是这样。",
+            "语言粗糙": f"我觉得应该这样，这个没什么好讨论的。",
+            "缺乏共情": f"我认为应该这样做。这是一个基于效率和理性的决策，情感因素不应成为主要考量。",
+            "只说立场没理由": f"我认为应该这样做。这是经过理性判断后的选择。",
             "跑题抓错矛盾": f"我认为这个议题背后的核心问题其实是价值取向的差异，而不是表面的选择。我们需要重新审视问题的本质。",
-            "单维度深挖": f"我认为应该{topic}，因为这个选择背后涉及的是不同价值观的碰撞。我们需要的不是简单的非此即彼，而是更深层次的对话与理解。"
+            "单维度深挖": f"我认为应该这样做，因为这个选择背后涉及的是不同价值观的碰撞。我们需要的不是简单的非此即彼，而是更深层次的对话与理解。"
         }
     }
     grade_templates = templates.get(grade, templates["3年级"])
@@ -199,12 +200,40 @@ def extract_info_from_script(script_text, api_key, base_url, model, script_type)
     if not script_text or len(script_text.strip()) < 10:
         return None
     if script_type == "议题型":
-        prompt = "你是一位教育内容分析专家。请从下面的议题讨论脚本中提取核心议题、人物名字、可能的观点。严格按JSON格式输出：{\"topic\": \"核心议题\", \"names\": [\"名字1\", \"名字2\"], \"viewpoints\": [\"观点1\", \"观点2\"]}\n\n脚本内容：\n" + script_text[:2000]
+        prompt = """你是一位教育内容分析专家。请从下面的议题讨论脚本中提取以下关键信息，严格按JSON格式输出：
+
+{
+  "names": ["人物名字1", "人物名字2", "人物名字3"],
+  "question": "脚本中直接问读者/学生的问题是什么？原话摘录",
+  "viewpoints": ["观点1", "观点2"]
+}
+
+脚本内容：
+""" + script_text[:2000]
     else:
-        prompt = "你是一位教育内容分析专家。请从下面的故事脚本中提取人物名字、核心矛盾、场景、关键物品。严格按JSON格式输出：{\"names\": [\"名字1\", \"名字2\"], \"conflict\": \"核心矛盾\", \"scene\": \"场景\", \"items\": [\"物品1\", \"物品2\"]}\n\n脚本内容：\n" + script_text[:2000]
+        prompt = """你是一位教育内容分析专家。请从下面的故事脚本中提取以下关键信息，严格按JSON格式输出：
+
+{
+  "names": ["人物名字1", "人物名字2", "人物名字3"],
+  "question": "脚本中直接问读者/学生的问题是什么？原话摘录。如果有多轮对话问题，提取最核心的那个问题。",
+  "conflict": "核心矛盾一句话概括",
+  "scene": "主要场景",
+  "items": ["物品1", "物品2"]
+}
+
+脚本内容：
+""" + script_text[:2000]
     try:
         client = OpenAI(api_key=api_key, base_url=base_url)
-        response = client.chat.completions.create(model=model, messages=[{"role": "system", "content": "请严格按照JSON格式输出。"}, {"role": "user", "content": prompt}], temperature=0.3, max_tokens=800)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "你是一位教育内容分析专家。请严格按照JSON格式输出，不要添加任何其他内容。如果脚本中没有明确的问题，请根据脚本内容推断读者需要思考的核心问题。"},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=800
+        )
         content = response.choices[0].message.content
         json_match = re.search(r'\{[\s\S]*\}', content)
         if json_match:
@@ -248,7 +277,15 @@ def parse_ai_configs(content):
 def call_ai(api_key, base_url, model, system_prompt, user_speech):
     try:
         client = OpenAI(api_key=api_key, base_url=base_url)
-        response = client.chat.completions.create(model=model, messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_speech}], temperature=0.7, max_tokens=2000)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_speech}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
         return response.choices[0].message.content
     except Exception as e:
         return "调用失败: " + str(e)
@@ -325,17 +362,47 @@ def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, ba
     if issues or warnings:
         issue_text = "\n".join(["- " + i for i in issues]) if issues else "无严重问题"
         warning_text = "\n".join(["- " + w for w in warnings]) if warnings else "无"
-        optimization_request = "【任务】优化以下AI指令词，解决诊断中发现的问题。\n\n【原始指令词】\n" + ai_prompt + "\n\n【AI角色】\n" + ai_role + "\n\n【诊断出的问题】\n" + issue_text + "\n\n【需要注意的点】\n" + warning_text + "\n\n【优化要求】\n1. 针对以上每个问题，在指令词中增加或修改对应的要求\n2. 保持原有风格和语气不变\n3. 只输出优化后的完整指令词，不要输出任何解释或说明\n4. 确保优化后的指令词是可直接复制使用的完整版本\n5. 如果问题中提到'未按格式输出'，请在指令词中明确写出输出格式模板\n6. 如果问题中提到'未追问引导'，请在指令词中增加明确的追问引导要求\n\n请输出优化后的完整指令词："
+        optimization_request = """【任务】优化以下AI指令词，解决诊断中发现的问题。
+
+【原始指令词】
+""" + ai_prompt + """
+
+【AI角色】
+""" + ai_role + """
+
+【诊断出的问题】
+""" + issue_text + """
+
+【需要注意的点】
+""" + warning_text + """
+
+【优化要求】
+1. 针对以上每个问题，在指令词中增加或修改对应的要求
+2. 保持原有风格和语气不变
+3. 只输出优化后的完整指令词，不要输出任何解释或说明
+4. 确保优化后的指令词是可直接复制使用的完整版本
+5. 如果问题中提到"未按格式输出"，请在指令词中明确写出输出格式模板
+6. 如果问题中提到"未追问引导"，请在指令词中增加明确的追问引导要求
+
+请输出优化后的完整指令词："""
         try:
             client = OpenAI(api_key=api_key, base_url=base_url)
-            response = client.chat.completions.create(model=model, messages=[{"role": "system", "content": "你是一位AI指令词优化专家。"}, {"role": "user", "content": optimization_request}], temperature=0.5, max_tokens=2000)
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "你是一位AI指令词优化专家。"},
+                    {"role": "user", "content": optimization_request}
+                ],
+                temperature=0.5,
+                max_tokens=2000
+            )
             optimized_prompt = response.choices[0].message.content
         except Exception as e:
             optimized_prompt = "优化失败: " + str(e)
     return {"issues": issues, "strengths": strengths, "warnings": warnings, "total_issues": len(issues), "total_strengths": len(strengths), "total_warnings": len(warnings), "optimized_prompt": optimized_prompt}
 
-st.title("🔬 AI指令词诊断与自动优化工具 v5.0")
-st.markdown("选择年级 → 上传故事脚本 → 自动识别脚本类型 → 生成模拟发言 → 测试AI指令词")
+st.title("🔬 AI指令词诊断与自动优化工具 v5.1")
+st.markdown("选择年级 → 上传故事脚本 → 自动提取核心问题 → 生成围绕问题的模拟发言 → 测试AI指令词")
 
 with st.sidebar:
     st.header("📋 功能")
@@ -348,7 +415,25 @@ with st.sidebar:
     st.caption("📁 历史记录: " + str(len(os.listdir(HISTORY_DIR))) + " 条")
 
 if menu == "📖 说明":
-    st.markdown("""## 📖 使用说明（v5.0）\n### 双模式支持\n工具会自动识别脚本类型：\n- **事件型**：有情节、有冲突的故事（如《不能没有礼物的日子》）\n- **议题型**：需要表达观点和理由的讨论（如《你赞成拆除城市的旧建筑吗？》）""")
+    st.markdown("""## 📖 使用说明（v5.1）
+    
+    ### 🆕 核心升级：围绕核心问题生成模拟发言
+    
+    v5.1 会自动从脚本中提取"核心问题"，所有模拟发言都围绕这个问题展开，确保测试不跑题。
+    
+    ### 双模式支持
+    工具会自动识别脚本类型：
+    - **事件型**：有情节、有冲突的故事（如《不能没有礼物的日子》）
+    - **议题型**：需要表达观点和理由的讨论（如《你赞成拆除城市的旧建筑吗？》）
+    
+    ### 核心功能
+    1. **选择年级**：1-2年级 / 3年级 / 4年级 / 5年级 / 6-7年级
+    2. **上传脚本**：上传本节课的故事脚本（Word或文本）
+    3. **自动提取**：提取人物、核心矛盾、场景、**核心问题**
+    4. **确认问题**：检查提取的问题是否正确，可以手动修改
+    5. **生成模拟发言**：围绕核心问题生成9种模拟发言
+    6. **测试AI**：用生成的发言测试你的AI指令词，自动诊断并优化
+    """)
 elif menu == "📚 历史记录":
     st.subheader("📚 历史测试记录")
     records = []
@@ -370,8 +455,9 @@ else:
         grade = st.selectbox("🎒 选择年级", options=["1-2年级", "3年级", "4年级", "5年级", "6-7年级"], index=0)
     grade_info = GRADE_CONFIG[grade]
     st.caption("📌 " + grade + "特征：句子长度 " + str(grade_info["sentence_len"][0]) + "-" + str(grade_info["sentence_len"][1]) + "字 | " + grade_info["features"])
+
     st.subheader("📤 上传本节课的故事脚本")
-    st.caption("上传Word文档（.docx）或文本文件（.txt），AI将自动识别脚本类型并提取关键信息")
+    st.caption("上传Word文档（.docx）或文本文件（.txt），AI将自动识别脚本类型并提取关键信息，包括核心问题")
     uploaded_file = st.file_uploader("选择文件", type=["docx", "txt"], label_visibility="collapsed")
     if uploaded_file is not None:
         file_bytes = uploaded_file.read()
@@ -408,7 +494,9 @@ else:
         st.caption("检查以下内容是否准确，如有偏差可以手动修改")
         if "names" not in extracted_data or not isinstance(extracted_data["names"], list):
             extracted_data["names"] = ["小明", "小丽", "小刚"]
-        col1, col2 = st.columns(2)
+        if "question" not in extracted_data or not extracted_data["question"]:
+            extracted_data["question"] = "你有什么特点？在合适的场景下，你的特点会变成优点吗？"
+        col1, col2 = st.columns([1, 1])
         with col1:
             names_str = ", ".join(extracted_data.get("names", ["小明", "小丽", "小刚"]))
             edited_names = st.text_input("👤 人物名字", value=names_str)
@@ -419,30 +507,30 @@ else:
                 conflict = extracted_data.get("conflict", "")
                 edited_conflict = st.text_input("⚡ 核心矛盾", value=conflict)
                 extracted_data["conflict"] = edited_conflict
-            else:
-                topic = extracted_data.get("topic", "")
-                edited_topic = st.text_input("💡 核心议题", value=topic)
-                extracted_data["topic"] = edited_topic
-        with col2:
-            if script_type == "事件型":
                 scene = extracted_data.get("scene", "")
                 edited_scene = st.text_input("📍 场景", value=scene)
                 extracted_data["scene"] = edited_scene
-                items_str = ", ".join(extracted_data.get("items", ["作品", "东西"]))
-                edited_items = st.text_input("📦 关键物品", value=items_str)
-                extracted_data["items"] = [i.strip() for i in edited_items.split(",") if i.strip()]
-                if not extracted_data["items"]:
-                    extracted_data["items"] = ["作品", "东西"]
             else:
                 viewpoints_str = ", ".join(extracted_data.get("viewpoints", ["观点1", "观点2"]))
                 edited_viewpoints = st.text_input("💬 可能的观点", value=viewpoints_str)
                 extracted_data["viewpoints"] = [v.strip() for v in edited_viewpoints.split(",") if v.strip()]
                 if not extracted_data["viewpoints"]:
                     extracted_data["viewpoints"] = ["赞成", "反对"]
+        with col2:
+            question = extracted_data.get("question", "")
+            edited_question = st.text_area("💬 核心问题（模拟发言将围绕这个问题展开）", value=question, height=100)
+            extracted_data["question"] = edited_question
+            if script_type == "事件型":
+                items_str = ", ".join(extracted_data.get("items", ["作品", "东西"]))
+                edited_items = st.text_input("📦 关键物品", value=items_str)
+                extracted_data["items"] = [i.strip() for i in edited_items.split(",") if i.strip()]
+                if not extracted_data["items"]:
+                    extracted_data["items"] = ["作品", "东西"]
         if st.button("✅ 确认信息，生成模拟发言"):
             st.session_state["extracted_data"] = extracted_data
             st.session_state["extracted_confirmed"] = True
             st.success("✅ 已确认，请往下滚动进行测试")
+
     st.subheader("🤖 输入本节课所有AI指令词")
     st.caption("每个AI用 === 分隔，第一行为AI名称")
     ai_configs_input = st.text_area("AI指令词", height=200, placeholder="【点评AI_温柔版】\n你是一位温柔的一二年级老师...\n===\n【点评AI_严格版】\n你是一位严格的一二年级老师...")
@@ -470,13 +558,15 @@ else:
             st.stop()
         extracted_data = st.session_state["extracted_data"]
         script_type = st.session_state.get("script_type", "事件型")
+        question = extracted_data.get("question", "你有什么特点？在合适的场景下，你的特点会变成优点吗？")
+        st.info("💬 核心问题：**" + question + "**")
         speeches = []
         for _ in range(samples_per_type):
             for speech_type in test_types:
                 speech_text = get_speech_for_grade(grade, speech_type, extracted_data, script_type)
                 speech_desc = next((t["desc"] for t in SPEECH_TYPES_CONFIG if t["id"] == speech_type), speech_type)
                 speeches.append({"type": speech_type, "desc": speech_desc, "speech": speech_text})
-        st.success("✅ 已生成 " + str(len(speeches)) + " 条模拟发言")
+        st.success("✅ 已生成 " + str(len(speeches)) + " 条模拟发言（围绕核心问题生成）")
         ai_configs = parse_ai_configs(ai_configs_input)
         if not ai_configs:
             st.error("AI指令词解析失败")
@@ -556,6 +646,8 @@ else:
                 ai_df = df[df["AI名称"] == diag["name"]]
                 for _, row in ai_df.iterrows():
                     with st.expander("📌 " + row['发言说明']):
+                        st.markdown("**核心问题：**")
+                        st.info(question)
                         st.markdown("**模拟发言：**")
                         st.info(row["模拟发言"])
                         st.markdown("**AI回复：**")
@@ -573,7 +665,7 @@ else:
         if optimized_texts:
             all_optimized = "\n=== 分隔 ===\n".join(optimized_texts)
             st.download_button(label="📥 一键下载所有优化版指令词", data=all_optimized, file_name="所有优化版指令词_" + course_name + "_" + timestamp + ".txt", mime="text/plain")
-        save_data = {"course": course_name, "timestamp": timestamp, "ai_count": len(ai_configs), "ai_names": [c["name"] for c in ai_configs], "diagnoses": all_diagnoses}
+        save_data = {"course": course_name, "timestamp": timestamp, "ai_count": len(ai_configs), "ai_names": [c["name"] for c in ai_configs], "question": question, "diagnoses": all_diagnoses}
         with open(os.path.join(HISTORY_DIR, course_name + "_" + timestamp + ".json"), "w", encoding="utf-8") as f:
             json.dump(save_data, f, ensure_ascii=False, indent=2)
         st.caption("💾 已保存至历史记录")
