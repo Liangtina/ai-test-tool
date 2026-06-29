@@ -100,19 +100,16 @@ def detect_script_type(script_text):
     if not script_text:
         return "事件型"
     
-    # 检查是否包含议题型关键词
     topic_keywords = ["赞成", "反对", "是否", "应该", "你认为", "怎么看", "观点", "看法", "立场", "议题", "讨论"]
     for kw in topic_keywords:
         if kw in script_text:
             return "议题型"
     
-    # 检查是否包含事件型关键词
     event_keywords = ["不小心", "弄坏", "撞到", "哭了", "生气", "发生", "然后", "接着", "故事", "有一天"]
     for kw in event_keywords:
         if kw in script_text:
             return "事件型"
     
-    # 默认返回事件型
     return "事件型"
 
 
@@ -193,7 +190,6 @@ def get_event_speech(grade, speech_type, extracted_data):
     
     grade_templates = templates.get(grade, templates["3年级"])
     result = grade_templates.get(speech_type, "发言内容待生成")
-    
     if result is None:
         result = "发言内容待生成"
     return result
@@ -272,7 +268,6 @@ def get_topic_speech(grade, speech_type, extracted_data):
     
     grade_templates = templates.get(grade, templates["3年级"])
     result = grade_templates.get(speech_type, "发言内容待生成")
-    
     if result is None:
         result = "发言内容待生成"
     return result
@@ -291,7 +286,7 @@ def get_speech_for_grade(grade, speech_type, extracted_data, script_type):
 
 
 # ============================================================
-# 解析上传的脚本（增强版）
+# 解析上传的脚本
 # ============================================================
 
 def parse_docx(file_bytes):
@@ -312,7 +307,7 @@ def extract_info_from_script(script_text, api_key, base_url, model, script_type)
         prompt = """
 你是一位教育内容分析专家。请从下面的议题讨论脚本中提取以下关键信息：
 
-1. **核心议题**：这个讨论的核心议题是什么？用一句话概括（如"是否应该拆除旧建筑"）。
+1. **核心议题**：这个讨论的核心议题是什么？用一句话概括。
 2. **人物名字**：脚本中出现了哪些小朋友的名字？列出3-5个。
 3. **可能的观点**：脚本中提到了哪些不同的观点或立场？列出2-3个。
 
@@ -604,7 +599,7 @@ if menu == "📖 说明":
     
     | 脚本类型 | 适用场景 | 示例 |
     |---------|---------|------|
-    | **事件型** | 有情节、有冲突的故事 | 《不能没有礼物的日子》、《小宇撞坏了小美的作品》 |
+    | **事件型** | 有情节、有冲突的故事 | 《不能没有礼物的日子》 |
     | **议题型** | 需要表达观点和理由的讨论 | 《你赞成拆除城市的旧建筑吗？》 |
     
     ### 核心功能
@@ -660,11 +655,9 @@ else:
         if script_text:
             st.success("✅ 文件读取成功，共 " + str(len(script_text)) + " 个字符")
             
-            # 自动识别脚本类型
             detected_type = detect_script_type(script_text)
-            st.info("📌 自动识别脚本类型：**" + detected_type + "**" + ("（如识别有误，可手动选择下方模式）" if detected_type else ""))
+            st.info("📌 自动识别脚本类型：**" + detected_type + "**")
             
-            # 手动选择覆盖
             script_type = st.radio(
                 "确认或手动选择脚本类型：",
                 options=["事件型", "议题型"],
@@ -680,4 +673,26 @@ else:
                     st.error("请先在侧边栏填写API Key")
                 else:
                     with st.spinner("正在分析脚本，提取关键信息..."):
-                        extracted_data = extract_info
+                        extracted_data = extract_info_from_script(script_text, api_key, base_url, model, script_type)
+                        if extracted_data:
+                            st.success("✅ 提取成功！")
+                            st.session_state["extracted_data"] = extracted_data
+                            st.session_state["script_text"] = script_text
+                            st.session_state["script_type"] = script_type
+                        else:
+                            st.error("提取失败，请检查脚本内容或重试")
+        else:
+            st.error("文件读取失败，请确认文件格式正确")
+    
+    if "extracted_data" in st.session_state:
+        extracted_data = st.session_state["extracted_data"]
+        script_type = st.session_state.get("script_type", "事件型")
+        
+        st.subheader("📋 AI提取的关键信息")
+        st.caption("检查以下内容是否准确，如有偏差可以手动修改")
+        
+        if "names" not in extracted_data or not isinstance(extracted_data["names"], list):
+            extracted_data["names"] = ["小明", "小丽", "小刚"]
+        
+        col1, col2 = st.columns(2)
+        with col
