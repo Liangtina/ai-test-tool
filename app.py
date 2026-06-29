@@ -27,7 +27,42 @@ HISTORY_DIR = "test_history"
 os.makedirs(HISTORY_DIR, exist_ok=True)
 
 # ============================================================
-# 模拟学生发言生成器
+# 默认词汇库（兜底用，用户不填自定义时使用）
+# ============================================================
+
+DEFAULT_NAMES = ["小星", "小明", "小丽", "小刚", "小美", "小乐", "小花", "小胖", "小雪", "小宇"]
+
+DEFAULT_ITEMS = [
+    ("旧报纸", "折", "小纸盒"),
+    ("旧鞋盒", "剪开", "小房子屋顶"),
+    ("空玻璃瓶", "洗干净插花", "花瓶"),
+    ("旧T恤", "剪成布条编", "小篮子"),
+    ("彩色扣子", "穿成", "项链"),
+    ("奶粉罐", "包上彩纸", "笔筒"),
+    ("旧纸箱", "裁开粘", "小书架"),
+    ("用完的笔芯", "捆在一起", "小栅栏"),
+]
+
+DEFAULT_TRAITS = [
+    ("跑得快", "快递员", "快递员要快快地送包裹"),
+    ("嗓门大", "体育老师", "体育老师在操场喊口令需要大声"),
+    ("安静", "图书管理员", "图书管理员要安安静静地整理书"),
+    ("爱观察", "科学家", "科学家要仔细观察才能发现秘密"),
+    ("爱笑", "幼儿园老师", "小朋友看到老师笑就会很开心"),
+    ("会安慰人", "医生", "病人难受时需要有人温柔地安慰"),
+    ("力气大", "消防员", "消防员要搬很重的东西救人"),
+    ("画画好", "设计师", "设计师要画很多图纸"),
+    ("喜欢说话", "主持人", "主持人要一直说话不紧张"),
+    ("有耐心", "老师", "老师要一遍一遍教小朋友"),
+    ("喜欢小动物", "兽医", "兽医要照顾小动物"),
+    ("手巧", "手工老师", "手工老师要教小朋友做东西"),
+]
+
+DEFAULT_FUZZY = ["好", "厉害", "不错", "还行", "还可以"]
+DEFAULT_JOBS = ["厨师", "司机", "警察", "护士", "建筑师", "飞行员", "画家", "歌手", "舞蹈老师"]
+
+# ============================================================
+# 模拟学生发言模板
 # ============================================================
 
 STUDENT_SPEECH_TEMPLATES = {
@@ -69,63 +104,167 @@ STUDENT_SPEECH_TEMPLATES = {
     }
 }
 
-NAMES = ["小星", "小明", "小丽", "小刚", "小美", "小乐", "小花", "小胖", "小雪", "小宇"]
-ITEMS = [("旧报纸", "折", "小纸盒"), ("旧鞋盒", "剪开", "小房子屋顶"), ("空玻璃瓶", "洗干净插花", "花瓶"), ("旧T恤", "剪成布条编", "小篮子"), ("彩色扣子", "穿成", "项链"), ("奶粉罐", "包上彩纸", "笔筒"), ("旧纸箱", "裁开粘", "小书架"), ("用完的笔芯", "捆在一起", "小栅栏")]
-TRAITS = [
-    ("跑得快", "快递员", "快递员要快快地送包裹"),
-    ("嗓门大", "体育老师", "体育老师在操场喊口令需要大声"),
-    ("安静", "图书管理员", "图书管理员要安安静静地整理书"),
-    ("爱观察", "科学家", "科学家要仔细观察才能发现秘密"),
-    ("爱笑", "幼儿园老师", "小朋友看到老师笑就会很开心"),
-    ("会安慰人", "医生", "病人难受时需要有人温柔地安慰"),
-    ("力气大", "消防员", "消防员要搬很重的东西救人"),
-    ("画画好", "设计师", "设计师要画很多图纸"),
-    ("喜欢说话", "主持人", "主持人要一直说话不紧张"),
-    ("有耐心", "老师", "老师要一遍一遍教小朋友"),
-    ("喜欢小动物", "兽医", "兽医要照顾小动物"),
-    ("手巧", "手工老师", "手工老师要教小朋友做东西"),
-]
-FUZZY_TRAITS = ["好", "厉害", "不错", "还行", "还可以"]
-JOBS = ["厨师", "司机", "警察", "护士", "建筑师", "飞行员", "画家", "歌手", "舞蹈老师"]
+# ============================================================
+# 解析用户自定义词汇
+# ============================================================
+
+def parse_custom_names(text):
+    """解析用户输入的名字列表"""
+    if not text or not text.strip():
+        return None
+    # 按逗号、中文逗号、空格、换行分割
+    items = re.split(r'[,，、\s\n]+', text.strip())
+    items = [item.strip() for item in items if item.strip()]
+    return items if items else None
+
+def parse_custom_items(text):
+    """解析用户输入的物品列表（每行：物品,动作,新用途）"""
+    if not text or not text.strip():
+        return None
+    items = []
+    for line in text.strip().split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        # 支持中英文逗号分割
+        parts = re.split(r'[,，]\s*', line)
+        if len(parts) >= 3:
+            items.append((parts[0].strip(), parts[1].strip(), parts[2].strip()))
+    return items if items else None
+
+def parse_custom_traits(text):
+    """解析用户输入的特质列表（每行：特点,工作,理由）"""
+    if not text or not text.strip():
+        return None
+    traits = []
+    for line in text.strip().split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        parts = re.split(r'[,，]\s*', line)
+        if len(parts) >= 3:
+            traits.append((parts[0].strip(), parts[1].strip(), parts[2].strip()))
+    return traits if traits else None
+
+def parse_custom_fuzzy(text):
+    """解析用户输入的模糊特质"""
+    if not text or not text.strip():
+        return None
+    items = re.split(r'[,，、\s\n]+', text.strip())
+    items = [item.strip() for item in items if item.strip()]
+    return items if items else None
+
+def parse_custom_jobs(text):
+    """解析用户输入的工作列表"""
+    if not text or not text.strip():
+        return None
+    items = re.split(r'[,，、\s\n]+', text.strip())
+    items = [item.strip() for item in items if item.strip()]
+    return items if items else None
 
 
-def generate_student_speech(speech_type):
-    name = random.choice(NAMES)
-    item, action, new_use = random.choice(ITEMS)
-    trait1, job1, reason1 = random.choice(TRAITS)
-    remaining = [t for t in TRAITS if t[0] != trait1]
-    trait2, job2, reason2 = random.choice(remaining) if remaining else random.choice(TRAITS)
+# ============================================================
+# 生成模拟发言（支持自定义词汇）
+# ============================================================
+
+def generate_student_speech_with_custom(
+    speech_type,
+    names=None,
+    items=None,
+    traits=None,
+    fuzzy_traits=None,
+    jobs=None
+):
+    """使用自定义词汇生成模拟发言"""
+    
+    # 使用自定义词汇或默认词汇
+    name_pool = names if names else DEFAULT_NAMES
+    item_pool = items if items else DEFAULT_ITEMS
+    trait_pool = traits if traits else DEFAULT_TRAITS
+    fuzzy_pool = fuzzy_traits if fuzzy_traits else DEFAULT_FUZZY
+    job_pool = jobs if jobs else DEFAULT_JOBS
+    
+    # 如果词库为空，使用默认
+    if not name_pool:
+        name_pool = DEFAULT_NAMES
+    if not item_pool:
+        item_pool = DEFAULT_ITEMS
+    if not trait_pool:
+        trait_pool = DEFAULT_TRAITS
+    if not fuzzy_pool:
+        fuzzy_pool = DEFAULT_FUZZY
+    if not job_pool:
+        job_pool = DEFAULT_JOBS
+    
+    name = random.choice(name_pool)
+    item, action, new_use = random.choice(item_pool)
+    trait1, job1, reason1 = random.choice(trait_pool)
+    
+    # 选第二个不同的特点
+    remaining = [t for t in trait_pool if t[0] != trait1]
+    trait2, job2, reason2 = random.choice(remaining) if remaining else random.choice(trait_pool)
+    
     config = STUDENT_SPEECH_TEMPLATES.get(speech_type, STUDENT_SPEECH_TEMPLATES["完整优秀"])
     template = config["template"]
     
     if speech_type == "完整优秀":
-        return template.format(name=name, item_intro=f"我家有好多{item}", action=action, new_use=new_use, count=2, trait1=trait1, trait2=trait2, job1=job1, job2=job2, reason1=reason1, reason2=reason2)
+        return template.format(
+            name=name, item_intro=f"我家有好多{item}", action=action, new_use=new_use,
+            count=2, trait1=trait1, trait2=trait2, job1=job1, job2=job2,
+            reason1=reason1, reason2=reason2
+        )
     elif speech_type == "完整优秀_单特点多工作":
-        return template.format(name=name, item_intro=f"我家有好多{item}", action=action, new_use=new_use, trait1=trait1, job1=job1, job2=job2, reason1=reason1, reason2=reason2)
+        return template.format(
+            name=name, item_intro=f"我家有好多{item}", action=action, new_use=new_use,
+            trait1=trait1, job1=job1, job2=job2, reason1=reason1, reason2=reason2
+        )
     elif speech_type == "缺为什么":
-        return template.format(name=name, item_intro=f"我家有好多{item}", action=action, new_use=new_use, trait1=trait1, job1=job1)
+        return template.format(
+            name=name, item_intro=f"我家有好多{item}", action=action, new_use=new_use,
+            trait1=trait1, job1=job1
+        )
     elif speech_type == "只说了物品没说特点":
-        return template.format(name=name, item_intro=f"好多{item}", action=action, new_use=new_use)
+        return template.format(
+            name=name, item_intro=f"好多{item}", action=action, new_use=new_use
+        )
     elif speech_type in ["只说了特点没说工作", "只说了特点缺工作缺理由"]:
         return template.format(name=name, trait1=trait1, trait2=trait2)
     elif speech_type == "过于简短":
         return template.format(name=name, trait1=trait1)
     elif speech_type == "特点模糊不具体":
-        fuzzy = random.choice(FUZZY_TRAITS)
-        job = random.choice(JOBS)
-        return template.format(name=name, item_intro=f"好多{item}", action=action, new_use=new_use, fuzzy_trait=fuzzy, job1=job)
+        fuzzy = random.choice(fuzzy_pool)
+        job = random.choice(job_pool)
+        return template.format(
+            name=name, item_intro=f"好多{item}", action=action, new_use=new_use,
+            fuzzy_trait=fuzzy, job1=job
+        )
     elif speech_type == "逻辑牵强":
-        wrong_job = random.choice([j for j in JOBS if j != job1]) if len(JOBS) > 1 else "厨师"
-        return template.format(name=name, item_intro=f"好多{item}", action=action, new_use=new_use, trait1=trait1, job1=wrong_job)
+        wrong_job = random.choice([j for j in job_pool if j != job1]) if len(job_pool) > 1 else "厨师"
+        return template.format(
+            name=name, item_intro=f"好多{item}", action=action, new_use=new_use,
+            trait1=trait1, job1=wrong_job
+        )
     return ""
 
 
-def generate_all_test_speeches(test_types, samples_per_type):
+def generate_all_test_speeches(test_types, samples_per_type, custom_data):
+    """生成所有测试发言"""
     speeches = []
     for _ in range(samples_per_type):
         for speech_type in test_types:
-            speech = generate_student_speech(speech_type)
-            speeches.append({"type": speech_type, "desc": STUDENT_SPEECH_TEMPLATES[speech_type]["desc"], "speech": speech})
+            speech = generate_student_speech_with_custom(
+                speech_type,
+                names=custom_data.get("names"),
+                items=custom_data.get("items"),
+                traits=custom_data.get("traits"),
+                fuzzy_traits=custom_data.get("fuzzy"),
+                jobs=custom_data.get("jobs")
+            )
+            speeches.append({
+                "type": speech_type,
+                "desc": STUDENT_SPEECH_TEMPLATES[speech_type]["desc"],
+                "speech": speech
+            })
     return speeches
 
 
@@ -186,11 +325,10 @@ def call_ai(api_key, base_url, model, system_prompt, user_speech):
 
 
 # ============================================================
-# 对比指令词差异（标注修改位置）
+# 对比指令词差异
 # ============================================================
 
 def highlight_diff(original, optimized):
-    """对比两个指令词，标注新增/修改的部分"""
     if not optimized or not original:
         return optimized, []
     
@@ -203,7 +341,6 @@ def highlight_diff(original, optimized):
         lineterm=''
     ))
     
-    # 提取变更的位置
     changes = []
     import re
     for line in diff:
@@ -214,7 +351,6 @@ def highlight_diff(original, optimized):
                 new_start = int(match.group(2))
                 changes.append({'old_start': old_start, 'new_start': new_start})
     
-    # 生成带标注的版本
     highlighted = []
     for i, line in enumerate(opt_lines):
         is_changed = False
@@ -235,8 +371,6 @@ def highlight_diff(original, optimized):
 # ============================================================
 
 def diagnose_ai_performance(ai_name, ai_role, ai_prompt, df_results, api_key, base_url, model):
-    """诊断AI表现并生成优化后的指令词"""
-    
     issues = []
     strengths = []
     warnings = []
@@ -371,6 +505,15 @@ if menu == "📖 说明":
     1. **测试**：用模拟学生发言测试每个AI
     2. **诊断**：自动找出每个AI指令词中的问题
     3. **优化**：AI自动生成优化后的新指令词，并标注修改位置
+    
+    ### 📝 自定义词汇（新功能）
+    
+    每节课的主题不同，你可以在"自定义词汇"区域填入本节课的专属词汇：
+    - **人物名字**：用逗号分隔
+    - **物品改造**：每行一个，格式：物品,动作,新用途
+    - **特点与工作**：每行一个，格式：特点,工作,理由
+    
+    不填则使用默认词汇。
     """)
 
 elif menu == "📚 历史记录":
@@ -389,18 +532,20 @@ elif menu == "📚 历史记录":
             st.caption(f"📅 {r['course']} - {r['time']} ({r['ai_count']}个AI)")
 
 else:
+    # ---- 课程信息 ----
     col1, col2 = st.columns([1, 2])
     with col1:
         course_name = st.text_input("📚 课程名称", placeholder="如：第1课_礼物改造")
     with col2:
         st.caption("💡 用于保存历史记录")
     
+    # ---- AI指令词 ----
     st.subheader("🤖 输入本节课所有AI指令词")
     st.caption("每个AI用 === 分隔，第一行为AI名称（如【点评AI_温柔版】）")
     
     ai_configs_input = st.text_area(
         "AI指令词",
-        height=350,
+        height=250,
         placeholder="""【点评AI_温柔版】
 你是一位温柔的一二年级老师，负责点评学生发言。请按照以下格式输出：
 【推荐评级】xxx
@@ -408,12 +553,47 @@ else:
 【综合点评】xxx
 ===
 【点评AI_严格版】
-你是一位严格的一二年级老师...
-===
-【回应AI】
-你是一位亲切的老师，负责回应学生发言..."""
+你是一位严格的一二年级老师..."""
     )
     
+    # ---- 自定义词汇（新功能） ----
+    st.subheader("📝 自定义模拟发言词汇（每节课不同）")
+    st.caption("不填则使用默认词汇。填了则用你填的内容生成模拟发言，让测试更贴合本节课主题。")
+    
+    with st.expander("✏️ 点击展开，填写本节课专属词汇", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            custom_names = st.text_area(
+                "👤 人物名字（逗号分隔）",
+                placeholder="小星,小明,小丽,小刚,小美",
+                height=68,
+                help="用逗号、中文逗号或空格分隔"
+            )
+            
+            custom_items = st.text_area(
+                "📦 物品改造（每行一个）",
+                placeholder="旧报纸,折,小纸盒\n旧鞋盒,剪开,小房子屋顶",
+                height=100,
+                help="格式：物品,动作,新用途（用逗号分隔）"
+            )
+        
+        with col2:
+            custom_traits = st.text_area(
+                "⭐ 特点与工作（每行一个）",
+                placeholder="跑得快,快递员,快递员要快快送包裹\n安静,图书管理员,图书管理员要安静整理书",
+                height=100,
+                help="格式：特点,工作,理由（用逗号分隔）"
+            )
+            
+            custom_fuzzy = st.text_area(
+                "🔤 模糊特质（逗号分隔）",
+                placeholder="好,厉害,不错,还行,还可以",
+                height=68,
+                help="用于生成'特点模糊'类型的测试发言"
+            )
+    
+    # ---- 测试设置 ----
     st.subheader("📝 测试设置")
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -426,6 +606,7 @@ else:
     with col2:
         samples_per_type = st.slider("每种类型生成几条", min_value=1, max_value=2, value=1)
     
+    # ---- 运行 ----
     if st.button("🔬 开始诊断并自动优化", type="primary", use_container_width=True):
         if not api_key:
             st.error("请先在侧边栏填写API Key")
@@ -440,6 +621,26 @@ else:
             st.error("请至少选择一种发言类型")
             st.stop()
         
+        # ---- 解析自定义词汇 ----
+        custom_data = {
+            "names": parse_custom_names(custom_names) if custom_names else None,
+            "items": parse_custom_items(custom_items) if custom_items else None,
+            "traits": parse_custom_traits(custom_traits) if custom_traits else None,
+            "fuzzy": parse_custom_fuzzy(custom_fuzzy) if custom_fuzzy else None,
+            "jobs": None  # 从traits中提取工作名作为备用
+        }
+        # 从traits中提取工作名
+        if custom_data["traits"]:
+            custom_data["jobs"] = [t[1] for t in custom_data["traits"]]
+        
+        # 显示使用了哪些词汇
+        using_custom = any(v is not None for v in custom_data.values())
+        if using_custom:
+            st.info("✅ 正在使用你自定义的词汇生成模拟发言")
+        else:
+            st.info("✅ 正在使用默认词汇生成模拟发言")
+        
+        # ---- 解析AI ----
         ai_configs = parse_ai_configs(ai_configs_input)
         if not ai_configs:
             st.error("AI指令词解析失败")
@@ -449,9 +650,11 @@ else:
         for c in ai_configs:
             st.caption(f"  - {c['name']} ({c['role']})")
         
-        speeches = generate_all_test_speeches(test_types, samples_per_type)
+        # ---- 生成发言 ----
+        speeches = generate_all_test_speeches(test_types, samples_per_type, custom_data)
         st.success(f"✅ 已生成 {len(speeches)} 条模拟发言")
         
+        # ---- 执行测试 ----
         progress_bar = st.progress(0)
         status_text = st.empty()
         
@@ -485,6 +688,7 @@ else:
         
         st.success(f"🎉 测试完成！共 {len(results)} 条点评记录")
         
+        # ---- 诊断与优化 ----
         st.subheader("📋 诊断与优化结果")
         
         all_diagnoses = []
@@ -504,7 +708,7 @@ else:
                 })
                 time.sleep(0.3)
         
-        # ---- 显示诊断结果（带差异标注和下拉菜单） ----
+        # ---- 显示结果 ----
         for diag in all_diagnoses:
             status_icon = "✅" if not diag["issues"] else "⚠️"
             with st.expander(f"{status_icon} {diag['name']} ({diag['role']}) — 问题: {diag['total_issues']}个", expanded=True):
@@ -532,7 +736,6 @@ else:
                     for w in diag["warnings"]:
                         st.markdown(f"- {w}")
                 
-                # ---- 优化后的指令词（带差异标注） ----
                 if diag["optimized_prompt"] and "【优化失败】" not in diag["optimized_prompt"]:
                     st.markdown("---")
                     st.markdown("**✨ AI自动优化后的指令词**")
@@ -560,7 +763,6 @@ else:
                     st.markdown("---")
                     st.markdown("🎉 **该AI表现良好，无需优化！**")
                 
-                # ---- 详细测试记录（下拉菜单查看模拟发言） ----
                 st.markdown("---")
                 st.markdown("**📝 详细测试记录**")
                 ai_df = df[df["AI名称"] == diag["name"]]
@@ -601,6 +803,7 @@ else:
                 mime="text/plain"
             )
         
+        # ---- 保存历史 ----
         save_data = {
             "course": course_name,
             "timestamp": timestamp,
@@ -609,8 +812,4 @@ else:
             "diagnoses": all_diagnoses
         }
         with open(os.path.join(HISTORY_DIR, f"{course_name}_{timestamp}.json"), "w", encoding="utf-8") as f:
-            json.dump(save_data, f, ensure_ascii=False, indent=2)
-        
-        st.caption(f"💾 已保存至历史记录")
-        
-      
+            json.dump(save_data, f
