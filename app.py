@@ -792,4 +792,19 @@ else:
             st.download_button(
                 label="📥 一键下载所有优化版指令词",
                 data=all_optimized,
-               
+                file_name=f"所有优化版指令词_{course_name}_{timestamp}.txt",
+                mime="text/plain"
+            )
+        
+        # ---- 保存历史 ----
+        save_data = {
+            "course": course_name,
+            "timestamp": timestamp,
+            "ai_count": len(ai_configs),
+            "ai_names": [c["name"] for c in ai_configs],
+            "diagnoses": all_diagnoses
+        }
+        with open(os.path.join(HISTORY_DIR, f"{course_name}_{timestamp}.json"), "w", encoding="utf-8") as f:
+            json.dump(save_data, f, ensure_ascii=False, indent=2)
+        
+        st.caption(f"💾 已保存至历史
